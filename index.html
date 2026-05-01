@@ -3,16 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YOU ONLY SIGn ONCE --- Beta edition </title>
+  <title>YOU ONLY SIGN ONCE --- BETA EDITION </title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/styles.css">
+  <!-- MediaPipe: sin empaquetador oficial estable para Vite — CDN es la práctica recomendada -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 </head>
 <body>
+
+  <!-- ══ SPLASH ══════════════════════════════════════════════════ -->
+  <div id="splash-screen" class="splash-screen">
+    <div class="splash-inner">
+      <span class="splash-logo">YOSO</span>
+      <span class="splash-sub">You Only Sign Once</span>
+      <div class="splash-spinner"></div>
+      <span class="splash-msg" id="splash-msg">Cargando modelo…</span>
+    </div>
+  </div>
 
   <!-- ══ WORDMARK ════════════════════════════════════════════════ -->
   <header class="topbar">
@@ -28,11 +38,15 @@
     <nav class="mode-tabs" role="tablist">
       <button class="mode-tab active" data-tab="traductor" role="tab">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h12M9 3v2m1.05 3.94a9 9 0 0 1-1.9-.99M3 14.89a9 9 0 0 0 9 .1M15 5h6M18 2v6"/></svg>
-        Traductor
+        <span>Traductor</span>
       </button>
       <button class="mode-tab" data-tab="entrenamiento" role="tab">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-        Entrenamiento
+        <span>Entrenamiento</span>
+      </button>
+      <button class="mode-tab" data-tab="aprendizaje" role="tab">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Aprendizaje</span>
       </button>
     </nav>
   </header>
@@ -52,7 +66,8 @@
       </div>
 
       <!-- Canvas -->
-      <div class="canvas-wrapper">
+      <div class="canvas-wrapper" id="canvas-wrapper">
+        <div class="canvas-skeleton" id="canvas-skeleton" aria-hidden="true"></div>
         <video class="input_video" autoplay playsinline aria-hidden="true"></video>
         <canvas class="output_canvas"></canvas>
         <div class="roi-overlay" id="roi-overlay" aria-hidden="true"></div>
@@ -140,6 +155,17 @@
           <p class="output-hint">Empieza a hacer señas...</p>
         </div>
 
+      </div>
+
+      <!-- Tab: Aprendizaje -->
+      <div id="tab-aprendizaje" class="tab-panel">
+        <div class="learn-panel">
+          <div class="learn-header">
+            <span class="learn-title">Alfabeto ASL</span>
+            <span class="learn-hint">Haz una seña — la letra se ilumina</span>
+          </div>
+          <div id="alphabet-grid" class="alphabet-grid"></div>
+        </div>
       </div>
 
       <!-- Tab: Entrenamiento -->

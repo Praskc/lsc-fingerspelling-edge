@@ -2,52 +2,71 @@
 // TYPES.TS — Interfaces y tipos del proyecto YOSO
 // ============================================================================
 
-export interface Landmark {
+export interface Punto {
   x: number
   y: number
   z: number
 }
 
-export interface Handedness {
+/** @deprecated usa Punto */
+export type Landmark = Punto
+
+export interface Lateralidad {
   label: 'Left' | 'Right'
   score: number
 }
 
-export interface HandsResult {
-  image: HTMLVideoElement | HTMLCanvasElement
-  multiHandLandmarks: Landmark[][]
-  multiHandedness:    Handedness[]
+/** @deprecated usa Lateralidad */
+export type Handedness = Lateralidad
+
+export interface ResultadoManos {
+  image:               HTMLVideoElement | HTMLCanvasElement
+  multiHandLandmarks:  Punto[][]
+  multiHandedness:     Lateralidad[]
 }
 
-export interface TopNItem {
-  letter: string
-  prob:   number
+/** @deprecated usa ResultadoManos */
+export type HandsResult = ResultadoManos
+
+export interface ItemTop {
+  letra: string
+  prob:  number
 }
 
-export interface DebugPayload {
-  probRed:      number
-  confEfectiva: number
-  distancia:    number | null
-  distRef:      number | null
-  bufferActual: string[]
-  topN:         TopNItem[]
+export interface CargaDebug {
+  probRed:        number
+  confEfectiva:   number
+  distancia:      number | null
+  distRef:        number | null
+  bufferActual:   string[]
+  topN:           ItemTop[]
+  bufferProgreso: number   // 0–1, maxPeso acumulado / PESO_MINIMO_VOTOS
 }
+
+/** @deprecated usa CargaDebug */
+export type DebugPayload = CargaDebug
 
 export interface Centroide {
   coords:   Float32Array
   dist_ref: number
 }
 
-export type CentroidesMap = Record<string, Centroide>
+export type MapaCentroides = Record<string, Centroide>
 
-export interface InferenceCallbacks {
-  onLetraConfirmada:  (letra: string) => void
-  onLetraInstantanea: (letra: string, confianza: number, latencia: number, isLeftCamera: boolean) => void
-  onDebugUpdate:      (payload: DebugPayload) => void
+/** @deprecated usa MapaCentroides */
+export type CentroidesMap = MapaCentroides
+
+export interface CallbacksInferencia {
+  alConfirmarLetra:    (letra: string) => void
+  alDetectarLetra:     (letra: string, confianza: number, latInferencia: number, latProcesamiento: number, esCamaraIzquierda: boolean) => void
+  alActualizarDebug:   (carga: CargaDebug) => void
 }
 
-export interface InferenceInitOptions {
-  session:    unknown
-  centroides: CentroidesMap | null
-  callbacks:  InferenceCallbacks
+export interface OpcionesInicioInferencia {
+  sesion:     unknown
+  centroides: MapaCentroides | null
+  callbacks:  CallbacksInferencia
 }
+
+/** @deprecated usa OpcionesInicioInferencia */
+export type InferenceInitOptions = OpcionesInicioInferencia

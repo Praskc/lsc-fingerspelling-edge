@@ -11,5 +11,10 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['onnxruntime-web']
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+    }
   }
 })

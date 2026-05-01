@@ -1,6 +1,7 @@
 // ============================================================================
 // GAME.TS — Gamificación YOSO · Palabras en español via Datamuse
 // ============================================================================
+import { signURI } from './signs'
 
 const NIVELES = [
   { nivel: 1, minLen: 3, maxLen: 4, req: 3,  label: 'NOVATO'   },
@@ -200,6 +201,9 @@ export class GameManager {
                        :                       'gw-pending'
       this.elObjetivo.appendChild(span)
     })
+    if (this.letraIdx < this.palabraActual.length) {
+      this.elImagenPista.src = signURI(this.palabraActual[this.letraIdx])
+    }
   }
 
   private _renderProgreso(): void {
