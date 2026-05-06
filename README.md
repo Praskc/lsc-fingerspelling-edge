@@ -311,7 +311,5 @@ Este proyecto nace en **Sucre, Colombia**. El reconocimiento de lengua de señas
 
 **Esteban Cotera** — Estudiante de Ingeniería electrónica, Sucre, Colombia
 
-*La comunicación es un derecho humano.*  
-*Construido para quien lo necesite, libre para siempre.*
 
 </div>
