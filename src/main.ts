@@ -5,3 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const app = new YOSOApp()
   app.iniciar()
 })
+
+// Registro del Service Worker para capacidades PWA offline-first
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}

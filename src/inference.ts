@@ -1,6 +1,3 @@
-// ============================================================================
-// INFERENCE.TS — Motor de inferencia YOSO
-// ============================================================================
 import * as ort from 'onnxruntime-web'
 import type { Punto, Lateralidad, MapaCentroides, OpcionesInicioInferencia, CargaDebug, ItemTop } from './types'
 
@@ -11,16 +8,16 @@ export const ALFABETO: string[] = [
 ]
 export const BORRAR = '⌫'
 
-// ── Hiperparámetros ──────────────────────────────────────────────────────────
-const UMBRAL_CONFIANZA    = 0.75
-const PESO_GEO_MAX        = 0.15
-const TAMANO_BUFFER       = 7
-const VOTOS_NECESARIOS    = 5
-const TIEMPO_COOLDOWN_MS  = 800
-const COOLDOWN_COMANDO_MS = 400
+const UMBRAL_CONFIANZA       = 0.75
+const PESO_GEO_MAX           = 0.15
+const TAMANO_BUFFER          = 7
+const VOTOS_NECESARIOS       = 5
+const TIEMPO_COOLDOWN_MS     = 800   // ms entre letras distintas
+const COOLDOWN_MISMA_LETRA   = 1800  // ms para repetir la misma letra (mantener seña)
+const COOLDOWN_COMANDO_MS    = 400   // ms para espacio / borrar
 // Suma mínima de pesos para confirmar (VOTOS_NECESARIOS × UMBRAL mínimo)
-const PESO_MINIMO_VOTOS   = VOTOS_NECESARIOS * UMBRAL_CONFIANZA  // 5 × 0.75 = 3.75
-const PUNTAS              = [4, 8, 12, 16, 20] as const
+const PESO_MINIMO_VOTOS      = VOTOS_NECESARIOS * UMBRAL_CONFIANZA  // 5 × 0.75 = 3.75
+const PUNTAS                 = [4, 8, 12, 16, 20] as const
 
 export class MotorInferencia {
   private sesion:     ort.InferenceSession | null = null
@@ -38,18 +35,20 @@ export class MotorInferencia {
 
   private cb!: OpcionesInicioInferencia['callbacks']
 
-  // ── API pública ──────────────────────────────────────────────────────────────
   public iniciar(opts: OpcionesInicioInferencia): void {
     this.sesion     = opts.sesion as ort.InferenceSession
     this.centroides = opts.centroides
     this.cb         = opts.callbacks
   }
 
-  public reiniciar(): void {
-    this.bufferVotos           = []
-    this.ultimaLetra           = ''
-    this.ultimoTiempoEscritura = 0
-    this._procesando           = false
+  
+  public reiniciar(forzar = false): void {
+    this.bufferVotos = []
+    this._procesando = false
+    if (forzar) {
+      this.ultimaLetra           = ''
+      this.ultimoTiempoEscritura = 0
+    }
   }
 
   public async procesar(puntos: Punto[], lateralidad: Lateralidad, jitter: number): Promise<void> {
@@ -114,11 +113,13 @@ export class MotorInferencia {
       if (pesoCandidato < PESO_MINIMO_VOTOS) return
       if (candidato === '') { this.ultimaLetra = ''; return }
 
-      const ahora     = Date.now()
-      const esComando = candidato === ' ' || candidato === BORRAR
-      const cooldown  = esComando ? COOLDOWN_COMANDO_MS : TIEMPO_COOLDOWN_MS
+      const ahora        = Date.now()
+      const esComando    = candidato === ' ' || candidato === BORRAR
+      const esMismaLetra = candidato === this.ultimaLetra && !esComando
+      const cooldown     = esComando    ? COOLDOWN_COMANDO_MS
+                         : esMismaLetra ? COOLDOWN_MISMA_LETRA
+                         : TIEMPO_COOLDOWN_MS
 
-      if (candidato === this.ultimaLetra && !esComando) return
       if (ahora - this.ultimoTiempoEscritura < cooldown) return
 
       this.ultimaLetra           = candidato
@@ -134,7 +135,6 @@ export class MotorInferencia {
     }
   }
 
-  // ── Privados ─────────────────────────────────────────────────────────────────
   private _preprocesar(puntos: Punto[], esCamaraIzquierda: boolean): Float32Array | null {
     const baseX = puntos[0].x
     const baseY = puntos[0].y
@@ -217,6 +217,5 @@ export class MotorInferencia {
   }
 }
 
-// ── Alias de compatibilidad ──────────────────────────────────────────────────
 /** @deprecated usa MotorInferencia */
 export const InferenceEngine = MotorInferencia

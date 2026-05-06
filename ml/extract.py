@@ -1,12 +1,4 @@
-"""
-ml/extract.py — Extracción de landmarks ASL con MediaPipe.
 
-Uso:
-    python -m ml.extract
-    python ml/extract.py          (también funciona desde la raíz del proyecto)
-
-Salida: lsc_master.csv  (o YOSO_OUTPUT_CSV env var)
-"""
 
 import sys
 import os
@@ -27,9 +19,6 @@ from ml.config import (
 from ml.features import recalibrar, construir_features
 
 
-# ── Worker de MediaPipe ───────────────────────────────────────────────────
-# Las funciones deben ser module-level para que ProcessPoolExecutor pueda
-# serializarlas en los procesos hijo (spawn en Windows).
 
 _hands: mp.solutions.hands.Hands | None = None
 
@@ -71,7 +60,6 @@ def _procesar_imagen(tarea: tuple[str, str]) -> list | None:
         return None
 
 
-# ── Detección de clase por ruta ───────────────────────────────────────────
 
 def _extraer_clase(ruta_archivo: str, ruta_base: str) -> str | None:
     try:
@@ -154,8 +142,6 @@ def main() -> None:
 
     print(f'\nGuardando {OUTPUT_CSV}...')
 
-    # Las features tienen 48 columnas; COLS_CSV espera label + 42 coords + ángulo.
-    # Guardamos label + los 48 features con nombres extendidos.
     cols = ['label'] + [f'f{i}' for i in range(48)]
     pd.DataFrame(muestras, columns=cols).to_csv(OUTPUT_CSV, index=False)
     print(f'¡Listo! → {OUTPUT_CSV}')

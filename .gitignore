@@ -27,13 +27,12 @@ dist-ssr
 *.bak
 *.csv
 
-# Python
+
 __pycache__/
 *.py[cod]
 *.pth
 lsc_master.csv
 hand_landmarks.csv
 
-# Modelo compilado (regenerable con ml/train.py)
 !model/.gitkeep
 

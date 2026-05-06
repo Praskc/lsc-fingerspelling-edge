@@ -1,15 +1,4 @@
-"""
-ml/train.py — Entrenamiento del modelo YOSO.
 
-Uso:
-    python -m ml.train
-    python ml/train.py          (también funciona desde la raíz del proyecto)
-
-Salida:
-    YOSO.onnx          — modelo exportado (cargado por la app web)
-    Centroides.json    — centroides P75 (cargado por la app web)
-    model/best_model.pth — checkpoint intermedio (solo pipeline Python)
-"""
 
 import sys
 import os
@@ -42,10 +31,9 @@ def log(msg: str) -> None:
     print(f'[{time.strftime("%H:%M:%S")}] {msg}')
 
 
-# ── Normalización de etiquetas ────────────────────────────────────────────
+
 
 def normalizar_label(lbl: str) -> str:
-    """'Gesture_A', 'SIGN-B', 'letter_c' → 'a', 'b', 'c'."""
     lbl = lbl.strip().lower()
     if lbl in LABEL_TO_INDEX:
         return lbl
@@ -58,7 +46,6 @@ def normalizar_label(lbl: str) -> str:
     return lbl
 
 
-# ── Carga y unificación de CSVs ───────────────────────────────────────────
 
 def _diagnostico_dataset(
     X: np.ndarray, y: np.ndarray, nombre: str, tiene_angulo: bool
@@ -91,12 +78,6 @@ def _diagnostico_dataset(
 
 
 def cargar_y_unificar(csv_files: list[str]) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Lee uno o más CSVs, recalibra y construye las 48 features por muestra.
-
-    Optimización clave: recalibración y construcción de features vectorizadas
-    (numpy sobre el array completo), no un bucle Python por fila.
-    """
     todos_feats:  list[np.ndarray] = []
     todos_labels: list[np.ndarray] = []
 
@@ -170,7 +151,7 @@ def calcular_centroides(X_tr: np.ndarray, y_tr: np.ndarray) -> dict:
     return centroides
 
 
-# ── Limpieza de outliers por clase ────────────────────────────────────────
+
 
 def limpiar_outliers_train(
     X_tr: np.ndarray, y_tr: np.ndarray, factor_iqr: float = 3.0
@@ -399,7 +380,7 @@ def main() -> None:
 
     log('Exportando a ONNX...')
     state = torch.load(PTH_PATH, weights_only=True)
-    # Si el modelo fue compilado, el state_dict puede tener prefijo '_orig_mod.'
+   
     if any(k.startswith('_orig_mod.') for k in state):
         state = {k.replace('_orig_mod.', ''): v for k, v in state.items()}
     export_model = FCNN().to(device)

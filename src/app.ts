@@ -1,13 +1,11 @@
-// ============================================================================
-// APP.TS — Orquestador YOSO
-// ============================================================================
+// APP.TS — Orquestador principal
 import * as ort                        from 'onnxruntime-web'
 import { MotorInferencia, BORRAR }     from './inference'
 import { GameManager }                 from './game'
 import { RenderizadorUI }              from './ui'
 import type { ResultadoManos, Punto }  from './types'
 
-// Declaraciones MediaPipe — sin empaquetador oficial para Vite, se carga por CDN
+// MediaPipe viene por CDN, no tiene empaquetador oficial para Vite
 declare const Hands:            new (opts: object) => ManosMediaPipe
 declare const Camera:           new (el: HTMLVideoElement, opts: object) => { start: () => void }
 declare const drawConnectors:   (ctx: CanvasRenderingContext2D, pts: Punto[], conns: unknown, estilo: object) => void
@@ -20,10 +18,13 @@ interface ManosMediaPipe {
   send:       (opts: { image: HTMLVideoElement }) => Promise<void>
 }
 
-// ── Límites de la región de interés (coordenadas normalizadas) ────────────────
-const LIMITE_SUPERIOR = 0.15
-const LIMITE_IZQUIERDO = 0.20
-const LIMITE_DERECHO   = 0.80
+// Límites de la ROI en coordenadas normalizadas (0–1)
+const LIMITE_SUPERIOR  = 0.10
+const LIMITE_IZQUIERDO = 0.15
+const LIMITE_DERECHO   = 0.85
+
+// Luminancia media mínima aceptable (0–255)
+const UMBRAL_LUZ = 40
 
 export class YOSOApp {
   private readonly motor: MotorInferencia
@@ -35,10 +36,17 @@ export class YOSOApp {
   private readonly ctx:    CanvasRenderingContext2D
 
   private modo: 'traductor' | 'entrenamiento' | 'aprendizaje' = 'traductor'
-  private anchoCanvas  = 0
-  private altoCanvas   = 0
-  private prevMunecaX  = 0
-  private prevMunecaY  = 0
+  private anchoCanvas = 0
+  private altoCanvas  = 0
+  private prevMunecaX = 0
+  private prevMunecaY = 0
+  private _pausado    = false
+
+  // Canvas 32×18 para muestreo de luminosidad sin impacto en GC
+  private readonly _canvasLuz: HTMLCanvasElement
+  private readonly _ctxLuz:    CanvasRenderingContext2D
+  private _frameCount   = 0
+  private _toastLuzVivo = false
 
   constructor() {
     this.motor  = new MotorInferencia()
@@ -49,12 +57,17 @@ export class YOSOApp {
     this.canvas = document.querySelector('.output_canvas')!
     this.ctx    = this.canvas.getContext('2d')!
 
+    this._canvasLuz        = document.createElement('canvas')
+    this._canvasLuz.width  = 32
+    this._canvasLuz.height = 18
+    this._ctxLuz = this._canvasLuz.getContext('2d', { willReadFrequently: true })!
+
+    document.addEventListener('visibilitychange', () => this._alCambiarVisibilidad())
     this._vincularEventos()
   }
 
-  // ── Arranque ─────────────────────────────────────────────────────────────────
   public async iniciar(): Promise<void> {
-    // Los binarios WASM vienen del CDN con versión anclada al paquete npm instalado
+    // WASM anclado a la versión del paquete npm
     ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/dist/'
 
     try {
@@ -97,6 +110,22 @@ export class YOSOApp {
       return
     }
 
+    // Tutorial en primera visita; bloquea hasta que el usuario lo cierra
+    await this.ui.mostrarOnboarding()
+    await this._iniciarCamara()
+  }
+
+  // Pide permiso antes de MediaPipe para poder mostrar error amigable
+  private async _iniciarCamara(): Promise<void> {
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    } catch (err) {
+      this.ui.mostrarEstadoVacio(err as DOMException, () => void this._iniciarCamara())
+      return
+    }
+
+    this.ui.ocultarEstadoVacio()
+
     const manos = new Hands({
       locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
     })
@@ -114,12 +143,44 @@ export class YOSOApp {
     })
 
     new Camera(this.video, {
-      onFrame: async () => { await manos.send({ image: this.video }) },
+      onFrame: async () => {
+        if (this._pausado) return
+        await manos.send({ image: this.video })
+      },
       width: 1280, height: 720
     }).start()
   }
 
-  // ── Eventos ───────────────────────────────────────────────────────────────────
+  // Pausa el bucle de inferencia mientras la pestaña está oculta
+  private _alCambiarVisibilidad(): void {
+    this._pausado = document.hidden
+    if (document.hidden) {
+      this.motor.reiniciar(true)
+      this.ui.estadoListo('idle')
+      this.ui.limpiarMano()
+    }
+  }
+
+  // Muestrea 576 px cada ~3 s para detectar entorno oscuro
+  private _verificarLuminosidad(): void {
+    if (this.video.videoWidth === 0) return
+    try {
+      this._ctxLuz.drawImage(this.video, 0, 0, 32, 18)
+      const data = this._ctxLuz.getImageData(0, 0, 32, 18).data
+      let suma = 0
+      for (let i = 0; i < data.length; i += 4) {
+        suma += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+      }
+      const oscuro = (suma / (data.length / 4)) < UMBRAL_LUZ
+      if (oscuro !== this._toastLuzVivo) {
+        this._toastLuzVivo = oscuro
+        oscuro
+          ? this.ui.mostrarToast('luz', 'Parece que estás en un lugar oscuro, mejora la iluminación para que el modelo funcione mejor.', 'warn', 0)
+          : this.ui.ocultarToast('luz')
+      }
+    } catch { /* SecurityError en contextos cross-origin */ }
+  }
+
   private _vincularEventos(): void {
     document.querySelectorAll<HTMLButtonElement>('.mode-tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -137,14 +198,13 @@ export class YOSOApp {
           this.modo = pestaña
           this.ui.limpiarTexto()
           this.ui.limpiarSena()
-          this.motor.reiniciar()
+          this.motor.reiniciar(true)
           pestaña === 'entrenamiento' ? void this.juego.activar() : this.juego.desactivar()
         }
       })
     })
   }
 
-  // ── Callbacks del motor de inferencia ────────────────────────────────────────
   private _alDetectarLetra(letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
     this.ui.actualizarPrediccion(letra, confianza, latencia, esIzquierda)
     if (this.modo === 'aprendizaje') {
@@ -158,10 +218,9 @@ export class YOSOApp {
     this.ui.agregarLetra(letra, letra === BORRAR)
   }
 
-  // ── Pipeline MediaPipe ────────────────────────────────────────────────────────
   private _alRecibirResultados(resultado: ResultadoManos): void {
     if (resultado.image) {
-      const vid = resultado.image as HTMLVideoElement
+      const vid   = resultado.image as HTMLVideoElement
       const ancho = vid.videoWidth  || (vid as unknown as HTMLCanvasElement).width
       const alto  = vid.videoHeight || (vid as unknown as HTMLCanvasElement).height
       if (ancho !== this.anchoCanvas || alto !== this.altoCanvas) {
@@ -171,6 +230,9 @@ export class YOSOApp {
         this.altoCanvas    = alto
       }
     }
+
+    // Chequeo de luz cada ~3 s
+    if (++this._frameCount % 90 === 0) this._verificarLuminosidad()
 
     const ac = this.canvas.width, al = this.canvas.height
     this.ctx.save()
@@ -216,7 +278,6 @@ export class YOSOApp {
       this.prevMunecaY = muneca.y
 
       this.ui.estadoMano(jitter > 0.03 ? 'Inestable' : 'Óptimo', jitter <= 0.03)
-
       void this.motor.procesar(puntos, lateralidad, jitter)
 
     } else {

@@ -1,0 +1,22 @@
+{
+  "name": "YOSO — You Only Sign Once",
+  "short_name": "YOSO",
+  "description": "Reconocimiento de lengua de señas ASL en tiempo real, directamente en tu navegador.",
+  "lang": "es",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1117",
+  "theme_color": "#38BDF8",
+  "orientation": "landscape-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["education", "accessibility", "utilities"],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

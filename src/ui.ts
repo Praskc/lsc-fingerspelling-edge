@@ -1,11 +1,7 @@
-// ============================================================================
-// UI.TS — Capa de renderizado DOM (sin lógica de negocio)
-// ============================================================================
 import { signURI }           from './signs'
 import type { CargaDebug }   from './types'
 
 export class RenderizadorUI {
-  // ── HUD / predicción ──────────────────────────────────────────────────────
   private readonly elIndicadorListo: HTMLElement
   private readonly elEtiquetaListo:  HTMLElement
   private readonly elPrediccion:     HTMLElement
@@ -14,13 +10,10 @@ export class RenderizadorUI {
   private readonly elMetricaMano:    HTMLElement
   private readonly elMetricaEstado:  HTMLElement
 
-  // ── Traductor ─────────────────────────────────────────────────────────────
   private readonly elTextoFinal:     HTMLElement
 
-  // ── ROI ───────────────────────────────────────────────────────────────────
   private readonly elROI:            HTMLElement
 
-  // ── Panel de depuración ───────────────────────────────────────────────────
   private readonly dbRojo:      HTMLElement
   private readonly dbBarRojo:   HTMLElement
   private readonly dbEfectivo:  HTMLElement
@@ -31,17 +24,26 @@ export class RenderizadorUI {
   private readonly dbVotos:     HTMLElement
   private readonly dbBuffer:    HTMLElement
   private readonly dbTop3:      HTMLElement
+  private readonly dbMem:       HTMLElement
+  private readonly dbBarMem:    HTMLElement
 
-  // ── Splash ────────────────────────────────────────────────────────────────
   private readonly elSplash:    HTMLElement
   private readonly elMsgSplash: HTMLElement
 
-  // ── Aprendizaje ───────────────────────────────────────────────────────────
   private readonly elAlfabeto: HTMLElement
   private senaActiva = ''
 
-  // ── Estado traductor ──────────────────────────────────────────────────────
   private textoAcumulado = ''
+
+  private readonly elEstadoVacio:  HTMLElement
+  private readonly elEsTitulo:     HTMLElement
+  private readonly elEsDesc:       HTMLElement
+  private readonly elEsReintentar: HTMLElement
+
+  private readonly elToastRoot:  HTMLElement
+  private readonly _timersToast: Map<string, ReturnType<typeof setTimeout>> = new Map()
+
+  private readonly elOnboarding: HTMLElement
 
   constructor() {
     this.elIndicadorListo = document.getElementById('ready-indicator')!
@@ -63,15 +65,22 @@ export class RenderizadorUI {
     this.dbVotos          = document.getElementById('db-votes')!
     this.dbBuffer         = document.getElementById('db-buffer')!
     this.dbTop3           = document.getElementById('db-top3')!
+    this.dbMem            = document.getElementById('db-mem')!
+    this.dbBarMem         = document.getElementById('db-bar-mem')!
     this.elSplash         = document.getElementById('splash-screen')!
     this.elMsgSplash      = document.getElementById('splash-msg')!
     this.elAlfabeto       = document.getElementById('alphabet-grid')!
+    this.elEstadoVacio    = document.getElementById('empty-state')!
+    this.elEsTitulo       = document.getElementById('es-title')!
+    this.elEsDesc         = document.getElementById('es-desc')!
+    this.elEsReintentar   = document.getElementById('es-retry')!
+    this.elToastRoot      = document.getElementById('toast-root')!
+    this.elOnboarding     = document.getElementById('onboarding')!
 
     this._construirAlfabeto()
     this._vincularDebug()
   }
 
-  // ── Splash ────────────────────────────────────────────────────────────────
   mensajeSplash(mensaje: string, esError = false): void {
     this.elMsgSplash.textContent = mensaje
     this.elMsgSplash.classList.toggle('splash-error', esError)
@@ -85,15 +94,13 @@ export class RenderizadorUI {
     document.getElementById('canvas-skeleton')?.classList.add('skeleton-oculto')
   }
 
-  // ── Indicador de listo ────────────────────────────────────────────────────
   estadoListo(estado: 'idle' | 'signing' | 'warning'): void {
     this.elIndicadorListo.className = `ready-indicator ${estado}`
-    this.elEtiquetaListo.textContent = estado === 'signing' ? 'FIRMANDO...'
+    this.elEtiquetaListo.textContent = estado === 'signing' ? 'LEYENDO SEÑA...'
                                      : estado === 'warning' ? 'FUERA DE ZONA'
-                                     : 'LISTO PARA FIRMAR'
+                                     : 'LISTO PARA LEER'
   }
 
-  // ── ROI ───────────────────────────────────────────────────────────────────
   actualizarROI(fueraZona: boolean): void {
     this.elROI.classList.toggle('roi-fuera',  fueraZona)
     this.elROI.classList.toggle('roi-activa', !fueraZona)
@@ -103,7 +110,6 @@ export class RenderizadorUI {
     this.elROI.classList.remove('roi-fuera', 'roi-activa')
   }
 
-  // ── Predicción / HUD ──────────────────────────────────────────────────────
   actualizarPrediccion(letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
     this.elMetricaTiempo.textContent = latencia.toFixed(1) + ' ms'
     this.elMetricaMano.textContent   = esIzquierda ? 'DERECHA' : 'IZQUIERDA'
@@ -130,7 +136,6 @@ export class RenderizadorUI {
     this.elMetricaEstado.className   = 'hud-val'
   }
 
-  // ── Texto traducido ───────────────────────────────────────────────────────
   agregarLetra(letra: string, borrar: boolean): void {
     if (borrar) {
       this.textoAcumulado = this.textoAcumulado.slice(0, -1)
@@ -146,7 +151,103 @@ export class RenderizadorUI {
     this.elTextoFinal.textContent = ''
   }
 
-  // ── Panel de depuración ───────────────────────────────────────────────────
+  mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void): void {
+    const mensajes: Record<string, [string, string]> = {
+      NotAllowedError:  [
+        'Permiso denegado',
+        'Habilita el acceso a la cámara en la configuración del navegador y vuelve a intentarlo.'
+      ],
+      NotFoundError:    [
+        'Cámara no encontrada',
+        'Conecta una cámara y vuelve a intentarlo.'
+      ],
+      NotReadableError: [
+        'Cámara ocupada',
+        'Otra aplicación está usando la cámara. Ciérrala y reintenta.'
+      ],
+      AbortError:       [
+        'Cámara ocupada',
+        'Otra aplicación está usando la cámara. Ciérrala y reintenta.'
+      ],
+    }
+    const [titulo, desc] = mensajes[err?.name ?? ''] ?? [
+      'Sin acceso a la cámara',
+      'Verifica que la cámara esté conectada y funcione correctamente.'
+    ]
+
+    this.elEsTitulo.textContent = titulo
+    this.elEsDesc.textContent   = desc
+    this.elEsReintentar.onclick = () => {
+      this.ocultarEstadoVacio()
+      onReintentar()
+    }
+    this.elEstadoVacio.removeAttribute('hidden')
+  }
+
+  ocultarEstadoVacio(): void {
+    this.elEstadoVacio.setAttribute('hidden', '')
+  }
+
+  mostrarToast(id: string, mensaje: string, tipo: 'info' | 'warn' | 'error' = 'info', duracion = 5000): void {
+    this.ocultarToast(id)
+
+    const toast = document.createElement('div')
+    toast.className          = `toast toast-${tipo}`
+    toast.dataset['toastId'] = id
+    toast.setAttribute('role', 'alert')
+
+    const icono   = document.createElement('span')
+    icono.className   = 'toast-icon'
+    icono.textContent = tipo === 'warn' ? '⚠' : tipo === 'error' ? '✕' : 'ℹ'
+
+    const texto   = document.createElement('span')
+    texto.className   = 'toast-msg'
+    texto.textContent = mensaje
+
+    const cerrar  = document.createElement('button')
+    cerrar.className = 'toast-close'
+    cerrar.innerHTML = '&times;'
+    cerrar.setAttribute('aria-label', 'Cerrar notificación')
+    cerrar.onclick   = () => this.ocultarToast(id)
+
+    toast.appendChild(icono)
+    toast.appendChild(texto)
+    toast.appendChild(cerrar)
+    this.elToastRoot.appendChild(toast)
+
+    // Forzar reflow para que la transición CSS funcione
+    void toast.offsetWidth
+    toast.classList.add('toast-visible')
+
+    if (duracion > 0) {
+      const timer = setTimeout(() => this.ocultarToast(id), duracion)
+      this._timersToast.set(id, timer)
+    }
+  }
+
+  ocultarToast(id: string): void {
+    const existing = this.elToastRoot.querySelector<HTMLElement>(`[data-toast-id="${id}"]`)
+    if (existing) {
+      existing.classList.remove('toast-visible')
+      existing.classList.add('toast-saliendo')
+      setTimeout(() => existing.remove(), 300)
+    }
+    const timer = this._timersToast.get(id)
+    if (timer !== undefined) { clearTimeout(timer); this._timersToast.delete(id) }
+  }
+
+  mostrarOnboarding(): Promise<void> {
+    if (localStorage.getItem('yoso-v1-onboarded')) return Promise.resolve()
+    return new Promise(resolve => {
+      this.elOnboarding.removeAttribute('hidden')
+      document.getElementById('onb-start')?.addEventListener('click', () => {
+        this.elOnboarding.setAttribute('hidden', '')
+        localStorage.setItem('yoso-v1-onboarded', '1')
+        resolve()
+      }, { once: true })
+    })
+  }
+
   actualizarDebug(p: CargaDebug): void {
     const pRojo = (p.probRed      * 100).toFixed(1)
     const pEfec = (p.confEfectiva * 100).toFixed(1)
@@ -169,7 +270,6 @@ export class RenderizadorUI {
       this.dbDistRef.textContent     = '—'
     }
 
-    // Celdas de votos del buffer
     const ganador = this._ganadorBuffer(p.bufferActual)
     this.dbBuffer.textContent = ''
     Array(10).fill('').map((_, i) => p.bufferActual[i] ?? '').forEach(ch => {
@@ -186,7 +286,21 @@ export class RenderizadorUI {
       ? `${ganador}: ${p.bufferActual.filter(x => x === ganador).length}/10`
       : '—'
 
-    // Top-3
+    // RAM heap (Chrome only — performance.memory es no-estándar)
+    const mem = (performance as unknown as { memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number } }).memory
+    if (mem) {
+      const usedMB  = (mem.usedJSHeapSize  / 1048576).toFixed(0)
+      const limitMB = mem.jsHeapSizeLimit   / 1048576
+      const pct     = Math.min((mem.usedJSHeapSize / mem.jsHeapSizeLimit) * 100, 100).toFixed(0)
+      this.dbMem.textContent        = usedMB + ' MB'
+      this.dbBarMem.style.width     = pct + '%'
+      this.dbBarMem.style.background = mem.usedJSHeapSize > limitMB * 0.7 * 1048576
+        ? 'var(--red)' : 'var(--green)'
+    } else {
+      this.dbMem.textContent    = 'N/A'
+      this.dbBarMem.style.width = '0%'
+    }
+
     this.dbTop3.textContent = ''
     p.topN.forEach((item, idx) => {
       const contenedor = document.createElement('span')
@@ -204,7 +318,6 @@ export class RenderizadorUI {
     })
   }
 
-  // ── Aprendizaje — grid del alfabeto ───────────────────────────────────────
   resaltarSena(letra: string): void {
     if (letra === this.senaActiva) return
     this.limpiarSena()
@@ -224,7 +337,6 @@ export class RenderizadorUI {
     this.senaActiva = ''
   }
 
-  // ── Privados ──────────────────────────────────────────────────────────────
   private _construirAlfabeto(): void {
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letra => {
       const tarjeta = document.createElement('div')

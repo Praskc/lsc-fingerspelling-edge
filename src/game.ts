@@ -1,6 +1,3 @@
-// ============================================================================
-// GAME.TS — Gamificación YOSO · Palabras en español via Datamuse
-// ============================================================================
 import { signURI } from './signs'
 
 const NIVELES = [
@@ -66,8 +63,6 @@ export class GameManager {
       : this._letraIncorrecta(letra)
   }
 
-  // ── Privados ──────────────────────────────────────────────────────────────
-
   private async _cargarPool(): Promise<void> {
     const { minLen, maxLen } = NIVELES[this.nivelIdx]
     try {
@@ -102,7 +97,7 @@ export class GameManager {
       this.pool = [...(BANCO[nivel] ?? BANCO[1])].sort(() => Math.random() - 0.5)
       this._setFeedback('SIN CONEXIÓN — MODO LOCAL', 'warn')
       window.setTimeout(() => {
-        if (this.activo && !this.bloqueado) this._setFeedback('FIRMANDO...', 'idle')
+        if (this.activo && !this.bloqueado) this._setFeedback('SEÑALANDO...', 'idle')
       }, 2000)
     }
   }
@@ -123,7 +118,7 @@ export class GameManager {
     this.errores = 0
     this._renderPalabra()
     this._renderProgreso()
-    this._setFeedback('FIRMANDO...', 'idle')
+    this._setFeedback('SEÑALANDO...', 'idle')
 
     this.timerPista = window.setTimeout(() => {
       if (this.activo && !this.bloqueado) {
@@ -165,7 +160,7 @@ export class GameManager {
     } else {
       this._setFeedback('CORRECTO', 'success')
       window.setTimeout(() => {
-        if (this.activo && !this.bloqueado) this._setFeedback('FIRMANDO...', 'idle')
+        if (this.activo && !this.bloqueado) this._setFeedback('SEÑALANDO...', 'idle')
       }, 500)
     }
   }
@@ -186,7 +181,7 @@ export class GameManager {
 
     this._setFeedback(`"${letra}" - NECESITAS "${this.palabraActual[this.letraIdx]}" · ${3 - this.errores} intentos`, 'error')
     window.setTimeout(() => {
-      if (this.activo && !this.bloqueado) this._setFeedback('FIRMANDO...', 'idle')
+      if (this.activo && !this.bloqueado) this._setFeedback('SEÑALANDO...', 'idle')
     }, 900)
   }
 
@@ -195,7 +190,7 @@ export class GameManager {
     this.elObjetivo.textContent = ''
     this.palabraActual.split('').forEach((ch, i) => {
       const span = document.createElement('span')
-      span.textContent = ch   // textContent escapa automáticamente
+      span.textContent = ch
       span.className   = i < this.letraIdx   ? 'gw-done'
                        : i === this.letraIdx ? 'gw-current'
                        :                       'gw-pending'

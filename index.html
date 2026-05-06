@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YOU ONLY SIGN ONCE --- BETA EDITION </title>
+  <meta name="theme-color" content="#38BDF8">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preload" href="/YOSO.onnx" as="fetch" crossorigin="anonymous">
+  <link rel="preload" href="/Centroides.json" as="fetch" crossorigin="anonymous">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/styles.css">
@@ -31,7 +40,7 @@
       <span class="wordmark-sep">/</span>
       <div class="wordmark-meta">
         <span class="wordmark-full">You Only Sign Once</span>
-        <span class="wordmark-slogan">Precision in every frame &nbsp;·&nbsp; Zero hesitation &nbsp;·&nbsp; Just do it once.</span>
+        <span class="wordmark-slogan">Bidirectional communication is a human right</span>
       </div>
     </div>
 
@@ -71,6 +80,21 @@
         <video class="input_video" autoplay playsinline aria-hidden="true"></video>
         <canvas class="output_canvas"></canvas>
         <div class="roi-overlay" id="roi-overlay" aria-hidden="true"></div>
+
+        <!-- Empty state — mostrado cuando la cámara falla o el permiso es denegado -->
+        <div id="empty-state" class="empty-state" hidden>
+          <svg class="es-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="1" y1="1" x2="23" y2="23"/>
+            <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34"/>
+            <path d="M7 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h16a2 2 0 0 0 1.5-.67"/>
+          </svg>
+          <p class="es-title" id="es-title">Sin acceso a la cámara</p>
+          <p class="es-desc" id="es-desc">Verifica los permisos de cámara en tu navegador.</p>
+          <button class="es-btn" id="es-retry">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Reintentar conexión
+          </button>
+        </div>
       </div>
 
      
@@ -137,6 +161,7 @@
           <div class="dr"><span class="dl">Dist ref</span><div class="dbw"><div class="db db-ref" style="width:50%"></div></div><span id="db-distref" class="dv">--</span></div>
           <div class="dr"><span class="dl">Buffer</span><div id="db-buffer" class="debug-buffer"></div><span id="db-votes" class="dv">--</span></div>
           <div class="dr"><span class="dl">Top-3</span><span id="db-top3" class="debug-top3">--</span></div>
+          <div class="dr"><span class="dl">RAM heap</span><div class="dbw"><div id="db-bar-mem" class="db db-mem"></div></div><span id="db-mem" class="dv">-- MB</span></div>
         </div>
       </div>
 
@@ -213,6 +238,45 @@
   <input type="checkbox" id="toggle-entrenamiento" style="display:none">
   <span id="label-traductor" style="display:none"></span>
   <span id="label-entrenamiento" style="display:none"></span>
+
+  <!-- Onboarding — primera visita -->
+  <div id="onboarding" class="onboarding" role="dialog" aria-modal="true" aria-labelledby="onb-title" hidden>
+    <div class="onb-inner">
+      <div class="onb-demo" aria-hidden="true">
+        <div class="onb-roi-frame">
+          <svg class="onb-hand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/>
+            <path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/>
+            <path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/>
+            <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+          </svg>
+          <span class="onb-roi-label">ZONA DE OPERACIÓN</span>
+        </div>
+        <p class="onb-tagline">Mantén tu mano dentro del marco</p>
+      </div>
+      <div class="onb-copy">
+        <h2 id="onb-title" class="onb-title">Cómo usar YOSO</h2>
+        <ol class="onb-steps">
+          <li>
+            <span class="onb-step-n">01</span>
+            <span>Coloca tu mano <strong>dentro del marco</strong> iluminado</span>
+          </li>
+          <li>
+            <span class="onb-step-n">02</span>
+            <span>Forma la seña ASL y <strong>mantén la mano estable</strong></span>
+          </li>
+          <li>
+            <span class="onb-step-n">03</span>
+            <span>La letra se confirma <strong>automáticamente</strong></span>
+          </li>
+        </ol>
+        <button id="onb-start" class="onb-cta">Comenzar →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor de toasts no intrusivos -->
+  <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="false"></div>
 
   <script type="module" src="/src/main.ts"></script>
 </body>
