@@ -239,10 +239,11 @@ body {
   container-name: workspace;
 }
 
-/* Stack automático cuando el workspace es estrecho */
-@container workspace (max-width: 700px) {
+/* Stack a 1 columna en móvil — container query no puede estilizar el propio contenedor */
+@media (max-width: 700px) {
   .workspace {
     grid-template-columns: 1fr;
+    padding-inline: var(--space-sm);
   }
   .output-wrap {
     max-width: 640px;
@@ -1236,4 +1237,6 @@ video { display: none; }
 @media (max-width: 520px) {
   .onb-inner { flex-direction: column; gap: var(--space-md); padding: var(--space-lg); }
   .onb-roi-frame { width: clamp(130px, 45vw, 170px); height: clamp(100px, 36vw, 140px); }
+  .onb-demo { display: none; }
+  .onb-cta { align-self: stretch; text-align: center; }
 }
