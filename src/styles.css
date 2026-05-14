@@ -355,7 +355,7 @@ video { display: none; }
 }
 
 .roi-overlay::before {
-  content: 'SIGNING SPACE';
+  content: 'ZONA DE SEÑAS';
   position: absolute;
   top: -1px; right: 8px;
   transform: translateY(-100%);
@@ -369,7 +369,7 @@ video { display: none; }
 }
 
 .roi-overlay.roi-fuera  { border-color: rgba(248,113,113,0.90); box-shadow: inset 0 0 0 1px rgba(248,113,113,0.15); }
-.roi-overlay.roi-fuera::before { color: rgba(248,113,113,0.90); content: 'OUT OF ZONE'; }
+.roi-overlay.roi-fuera::before { color: rgba(248,113,113,0.90); content: 'FUERA DE ZONA'; }
 .roi-overlay.roi-activa { border-color: rgba(56,189,248,0.95);  box-shadow: inset 0 0 0 1px rgba(56,189,248,0.08); }
 
 /* ── HUD — fluid ── */

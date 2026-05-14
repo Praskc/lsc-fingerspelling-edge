@@ -1,11 +1,13 @@
-// APP.TS — Orquestador principal
+// ============================================================================
+// APP.TS — Orquestador YOSO
+// ============================================================================
 import * as ort                        from 'onnxruntime-web'
 import { MotorInferencia, BORRAR }     from './inference'
 import { GameManager }                 from './game'
 import { RenderizadorUI }              from './ui'
 import type { ResultadoManos, Punto }  from './types'
 
-// MediaPipe viene por CDN, no tiene empaquetador oficial para Vite
+// Declaraciones MediaPipe — sin empaquetador oficial para Vite, se carga por CDN
 declare const Hands:            new (opts: object) => ManosMediaPipe
 declare const Camera:           new (el: HTMLVideoElement, opts: object) => { start: () => void }
 declare const drawConnectors:   (ctx: CanvasRenderingContext2D, pts: Punto[], conns: unknown, estilo: object) => void
@@ -18,12 +20,12 @@ interface ManosMediaPipe {
   send:       (opts: { image: HTMLVideoElement }) => Promise<void>
 }
 
-// Límites de la ROI en coordenadas normalizadas (0–1)
-const LIMITE_SUPERIOR  = 0.12
-const LIMITE_IZQUIERDO = 0.22
-const LIMITE_DERECHO   = 0.88
+// ── Límites de la región de interés (coordenadas normalizadas) ────────────────
+const LIMITE_SUPERIOR  = 0.10
+const LIMITE_IZQUIERDO = 0.15
+const LIMITE_DERECHO   = 0.85
 
-// Luminancia media mínima aceptable (0–255)
+// ── Umbral de luminosidad media (0-255) bajo el cual se alerta oscuridad ──────
 const UMBRAL_LUZ = 40
 
 export class YOSOApp {
@@ -36,17 +38,19 @@ export class YOSOApp {
   private readonly ctx:    CanvasRenderingContext2D
 
   private modo: 'traductor' | 'entrenamiento' | 'aprendizaje' = 'traductor'
-  private anchoCanvas = 0
-  private altoCanvas  = 0
-  private prevMunecaX = 0
-  private prevMunecaY = 0
-  private _pausado    = false
+  private anchoCanvas  = 0
+  private altoCanvas   = 0
+  private prevMunecaX  = 0
+  private prevMunecaY  = 0
 
-  // Canvas 32×18 para muestreo de luminosidad sin impacto en GC
+  // ── Visibilidad / pausa térmica ───────────────────────────────────────────
+  private _pausado = false
+
+  // ── Muestreo de luminosidad ───────────────────────────────────────────────
   private readonly _canvasLuz: HTMLCanvasElement
   private readonly _ctxLuz:    CanvasRenderingContext2D
-  private _frameCount   = 0
-  private _toastLuzVivo = false
+  private _frameCount    = 0
+  private _toastLuzVivo  = false
 
   constructor() {
     this.motor  = new MotorInferencia()
@@ -57,7 +61,8 @@ export class YOSOApp {
     this.canvas = document.querySelector('.output_canvas')!
     this.ctx    = this.canvas.getContext('2d')!
 
-    this._canvasLuz        = document.createElement('canvas')
+    // Canvas pequeño reutilizable para muestreo de luminosidad (32×18 = 576 píxeles)
+    this._canvasLuz      = document.createElement('canvas')
     this._canvasLuz.width  = 32
     this._canvasLuz.height = 18
     this._ctxLuz = this._canvasLuz.getContext('2d', { willReadFrequently: true })!
@@ -66,8 +71,9 @@ export class YOSOApp {
     this._vincularEventos()
   }
 
+  // ── Arranque ─────────────────────────────────────────────────────────────────
   public async iniciar(): Promise<void> {
-    // WASM anclado a la versión del paquete npm
+    // Los binarios WASM vienen del CDN con versión anclada al paquete npm instalado
     ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/dist/'
 
     try {
@@ -110,17 +116,24 @@ export class YOSOApp {
       return
     }
 
-    // Tutorial en primera visita; bloquea hasta que el usuario lo cierra
+    // Mostrar tutorial en primera visita; esperar a que el usuario lo cierre
     await this.ui.mostrarOnboarding()
     await this._iniciarCamara()
   }
 
-  // Pide permiso antes de MediaPipe para poder mostrar error amigable
+  // ── Inicialización de cámara (reiniciable vía botón de reintento) ─────────────
   private async _iniciarCamara(): Promise<void> {
+    // Verificar permiso antes de iniciar MediaPipe para poder mostrar error amigable
     try {
       await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
     } catch (err) {
-      this.ui.mostrarEstadoVacio(err as DOMException, () => void this._iniciarCamara())
+      const domErr = err as DOMException
+      // Si está bloqueado (NotAllowedError) mostrar instrucciones específicas
+      if (domErr.name === 'NotAllowedError' || domErr.name === 'PermissionDeniedError') {
+        this.ui.mostrarEstadoVacio(domErr, () => void this._iniciarCamara(), true)
+      } else {
+        this.ui.mostrarEstadoVacio(domErr, () => void this._iniciarCamara(), false)
+      }
       return
     }
 
@@ -142,16 +155,21 @@ export class YOSOApp {
       this._alRecibirResultados(r)
     })
 
+    // Resolución adaptativa — móvil recibe 640x480, desktop 1280x720
+    const esMobil = window.innerWidth <= 768
+    const camW    = esMobil ? 640  : 1280
+    const camH    = esMobil ? 480  : 720
+
     new Camera(this.video, {
       onFrame: async () => {
         if (this._pausado) return
         await manos.send({ image: this.video })
       },
-      width: 1280, height: 720
+      width: camW, height: camH
     }).start()
   }
 
-  // Pausa el bucle de inferencia mientras la pestaña está oculta
+  // ── Page Visibility API — pausa térmica ───────────────────────────────────────
   private _alCambiarVisibilidad(): void {
     this._pausado = document.hidden
     if (document.hidden) {
@@ -161,7 +179,7 @@ export class YOSOApp {
     }
   }
 
-  // Muestrea 576 px cada ~3 s para detectar entorno oscuro
+  // ── Diagnóstico de luminosidad ────────────────────────────────────────────────
   private _verificarLuminosidad(): void {
     if (this.video.videoWidth === 0) return
     try {
@@ -171,16 +189,20 @@ export class YOSOApp {
       for (let i = 0; i < data.length; i += 4) {
         suma += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
       }
-      const oscuro = (suma / (data.length / 4)) < UMBRAL_LUZ
+      const promedio = suma / (data.length / 4) // 0–255
+      const oscuro   = promedio < UMBRAL_LUZ
       if (oscuro !== this._toastLuzVivo) {
         this._toastLuzVivo = oscuro
         oscuro
-          ? this.ui.mostrarToast('luz', 'Parece que estás en un lugar oscuro, mejora la iluminación para que el modelo funcione mejor.', 'warn', 0)
+          ? this.ui.mostrarToast('luz', 'Parece que estás en un lugar oscuro — mejora la iluminación para que el modelo funcione mejor.', 'warn', 0)
           : this.ui.ocultarToast('luz')
       }
-    } catch { /* SecurityError en contextos cross-origin */ }
+    } catch {
+      // SecurityError posible en contextos cross-origin (ignorar silenciosamente)
+    }
   }
 
+  // ── Eventos ───────────────────────────────────────────────────────────────────
   private _vincularEventos(): void {
     document.querySelectorAll<HTMLButtonElement>('.mode-tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -205,6 +227,7 @@ export class YOSOApp {
     })
   }
 
+  // ── Callbacks del motor de inferencia ────────────────────────────────────────
   private _alDetectarLetra(letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
     this.ui.actualizarPrediccion(letra, confianza, latencia, esIzquierda)
     if (this.modo === 'aprendizaje') {
@@ -218,9 +241,10 @@ export class YOSOApp {
     this.ui.agregarLetra(letra, letra === BORRAR)
   }
 
+  // ── Pipeline MediaPipe ────────────────────────────────────────────────────────
   private _alRecibirResultados(resultado: ResultadoManos): void {
     if (resultado.image) {
-      const vid   = resultado.image as HTMLVideoElement
+      const vid = resultado.image as HTMLVideoElement
       const ancho = vid.videoWidth  || (vid as unknown as HTMLCanvasElement).width
       const alto  = vid.videoHeight || (vid as unknown as HTMLCanvasElement).height
       if (ancho !== this.anchoCanvas || alto !== this.altoCanvas) {
@@ -231,7 +255,7 @@ export class YOSOApp {
       }
     }
 
-    // Chequeo de luz cada ~3 s
+    // Verificar luminosidad cada ~3 segundos (90 frames a 30 fps)
     if (++this._frameCount % 90 === 0) this._verificarLuminosidad()
 
     const ac = this.canvas.width, al = this.canvas.height
@@ -278,6 +302,7 @@ export class YOSOApp {
       this.prevMunecaY = muneca.y
 
       this.ui.estadoMano(jitter > 0.03 ? 'Inestable' : 'Óptimo', jitter <= 0.03)
+
       void this.motor.procesar(puntos, lateralidad, jitter)
 
     } else {

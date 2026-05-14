@@ -14,7 +14,7 @@ dist-ssr
 *.local
 
 asl_dataset
-.jpg
+*.jpg
 
 .vscode/*
 !.vscode/extensions.json

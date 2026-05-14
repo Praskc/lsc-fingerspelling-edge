@@ -135,7 +135,7 @@ export class RenderizadorUI {
       this.elConfianza.textContent  = (confianza * 100).toFixed(1) + '%'
     } else {
       this.elPrediccion.textContent = '_'
-      this.elConfianza.textContent  = 'Buscando...'
+      this.elConfianza.textContent  = 'Detectando...'
     }
   }
 

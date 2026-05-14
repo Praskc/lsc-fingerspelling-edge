@@ -97,7 +97,7 @@ export class GameManager {
       this.pool = [...(BANCO[nivel] ?? BANCO[1])].sort(() => Math.random() - 0.5)
       this._setFeedback('SIN CONEXIÓN — MODO LOCAL', 'warn')
       window.setTimeout(() => {
-        if (this.activo && !this.bloqueado) this._setFeedback('SEÑALANDO...', 'idle')
+        if (this.activo && !this.bloqueado) this._setFeedback('HACIENDO SEÑA...', 'idle')
       }, 2000)
     }
   }
@@ -118,12 +118,12 @@ export class GameManager {
     this.errores = 0
     this._renderPalabra()
     this._renderProgreso()
-    this._setFeedback('SEÑALANDO...', 'idle')
+    this._setFeedback('HACIENDO SEÑA...', 'idle')
 
     this.timerPista = window.setTimeout(() => {
       if (this.activo && !this.bloqueado) {
         this.elImagenPista.classList.add('visible')
-        this._setFeedback('OBSERVA LA GUIA', 'warn')
+        this._setFeedback('MIRA LA GUÍA', 'warn')
       }
     }, 6000)
   }
@@ -160,7 +160,7 @@ export class GameManager {
     } else {
       this._setFeedback('CORRECTO', 'success')
       window.setTimeout(() => {
-        if (this.activo && !this.bloqueado) this._setFeedback('SEÑALANDO...', 'idle')
+        if (this.activo && !this.bloqueado) this._setFeedback('HACIENDO SEÑA...', 'idle')
       }, 500)
     }
   }
@@ -174,14 +174,14 @@ export class GameManager {
       this.bloqueado = true
       clearTimeout(this.timerPista)
       this.elImagenPista.classList.remove('visible')
-      this._setFeedback('PALABRA SALTADA', 'warn')
+      this._setFeedback('PALABRA OMITIDA', 'warn')
       window.setTimeout(() => { if (this.activo) this._nuevaPalabra() }, 1200)
       return
     }
 
     this._setFeedback(`"${letra}" - NECESITAS "${this.palabraActual[this.letraIdx]}" · ${3 - this.errores} intentos`, 'error')
     window.setTimeout(() => {
-      if (this.activo && !this.bloqueado) this._setFeedback('SEÑALANDO...', 'idle')
+      if (this.activo && !this.bloqueado) this._setFeedback('HACIENDO SEÑA...', 'idle')
     }, 900)
   }
 
