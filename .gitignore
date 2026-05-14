@@ -13,6 +13,8 @@ dist
 dist-ssr
 *.local
 
+asl_dataset
+.jpg
 
 .vscode/*
 !.vscode/extensions.json
@@ -36,3 +38,4 @@ hand_landmarks.csv
 
 !model/.gitkeep
 
+.vercel

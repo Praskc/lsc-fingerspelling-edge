@@ -1,7 +1,11 @@
+// ============================================================================
+// UI.TS — Capa de renderizado DOM (sin lógica de negocio)
+// ============================================================================
 import { signURI }           from './signs'
 import type { CargaDebug }   from './types'
 
 export class RenderizadorUI {
+  // ── HUD / predicción ──────────────────────────────────────────────────────
   private readonly elIndicadorListo: HTMLElement
   private readonly elEtiquetaListo:  HTMLElement
   private readonly elPrediccion:     HTMLElement
@@ -10,10 +14,13 @@ export class RenderizadorUI {
   private readonly elMetricaMano:    HTMLElement
   private readonly elMetricaEstado:  HTMLElement
 
+  // ── Traductor ─────────────────────────────────────────────────────────────
   private readonly elTextoFinal:     HTMLElement
 
+  // ── ROI ───────────────────────────────────────────────────────────────────
   private readonly elROI:            HTMLElement
 
+  // ── Panel de depuración ───────────────────────────────────────────────────
   private readonly dbRojo:      HTMLElement
   private readonly dbBarRojo:   HTMLElement
   private readonly dbEfectivo:  HTMLElement
@@ -27,22 +34,28 @@ export class RenderizadorUI {
   private readonly dbMem:       HTMLElement
   private readonly dbBarMem:    HTMLElement
 
+  // ── Splash ────────────────────────────────────────────────────────────────
   private readonly elSplash:    HTMLElement
   private readonly elMsgSplash: HTMLElement
 
+  // ── Aprendizaje ───────────────────────────────────────────────────────────
   private readonly elAlfabeto: HTMLElement
   private senaActiva = ''
 
+  // ── Estado traductor ──────────────────────────────────────────────────────
   private textoAcumulado = ''
 
+  // ── Empty state ───────────────────────────────────────────────────────────
   private readonly elEstadoVacio:  HTMLElement
   private readonly elEsTitulo:     HTMLElement
   private readonly elEsDesc:       HTMLElement
   private readonly elEsReintentar: HTMLElement
 
+  // ── Toast ─────────────────────────────────────────────────────────────────
   private readonly elToastRoot:  HTMLElement
   private readonly _timersToast: Map<string, ReturnType<typeof setTimeout>> = new Map()
 
+  // ── Onboarding ────────────────────────────────────────────────────────────
   private readonly elOnboarding: HTMLElement
 
   constructor() {
@@ -81,6 +94,7 @@ export class RenderizadorUI {
     this._vincularDebug()
   }
 
+  // ── Splash ────────────────────────────────────────────────────────────────
   mensajeSplash(mensaje: string, esError = false): void {
     this.elMsgSplash.textContent = mensaje
     this.elMsgSplash.classList.toggle('splash-error', esError)
@@ -94,6 +108,7 @@ export class RenderizadorUI {
     document.getElementById('canvas-skeleton')?.classList.add('skeleton-oculto')
   }
 
+  // ── Indicador de listo ────────────────────────────────────────────────────
   estadoListo(estado: 'idle' | 'signing' | 'warning'): void {
     this.elIndicadorListo.className = `ready-indicator ${estado}`
     this.elEtiquetaListo.textContent = estado === 'signing' ? 'LEYENDO SEÑA...'
@@ -101,6 +116,7 @@ export class RenderizadorUI {
                                      : 'LISTO PARA LEER'
   }
 
+  // ── ROI ───────────────────────────────────────────────────────────────────
   actualizarROI(fueraZona: boolean): void {
     this.elROI.classList.toggle('roi-fuera',  fueraZona)
     this.elROI.classList.toggle('roi-activa', !fueraZona)
@@ -110,6 +126,7 @@ export class RenderizadorUI {
     this.elROI.classList.remove('roi-fuera', 'roi-activa')
   }
 
+  // ── Predicción / HUD ──────────────────────────────────────────────────────
   actualizarPrediccion(letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
     this.elMetricaTiempo.textContent = latencia.toFixed(1) + ' ms'
     this.elMetricaMano.textContent   = esIzquierda ? 'DERECHA' : 'IZQUIERDA'
@@ -136,6 +153,7 @@ export class RenderizadorUI {
     this.elMetricaEstado.className   = 'hud-val'
   }
 
+  // ── Texto traducido ───────────────────────────────────────────────────────
   agregarLetra(letra: string, borrar: boolean): void {
     if (borrar) {
       this.textoAcumulado = this.textoAcumulado.slice(0, -1)
@@ -151,25 +169,34 @@ export class RenderizadorUI {
     this.elTextoFinal.textContent = ''
   }
 
-  mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void): void {
+  // ── Empty state — error de cámara ─────────────────────────────────────────
+  mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void, bloqueado = false): void {
+    const esMobil = window.innerWidth <= 768
+
     const mensajes: Record<string, [string, string]> = {
-      NotAllowedError:  [
+      NotAllowedError: bloqueado ? [
+        'Cámara bloqueada',
+        esMobil
+          ? 'Toca el ícono 🔒 en la barra del navegador → Permisos → Cámara → Permitir. Luego recarga la página.'
+          : 'Haz clic en el ícono 🔒 o 📷 en la barra de dirección → Permitir cámara → Recargar página.'
+      ] : [
         'Permiso denegado',
-        'Habilita el acceso a la cámara en la configuración del navegador y vuelve a intentarlo.'
+        'Permite el acceso a la cámara cuando el navegador lo solicite.'
       ],
-      NotFoundError:    [
-        'Cámara no encontrada',
-        'Conecta una cámara y vuelve a intentarlo.'
+      PermissionDeniedError: bloqueado ? [
+        'Cámara bloqueada',
+        esMobil
+          ? 'Toca el ícono 🔒 en la barra del navegador → Permisos → Cámara → Permitir. Luego recarga la página.'
+          : 'Haz clic en el ícono 🔒 o 📷 en la barra de dirección → Permitir cámara → Recargar página.'
+      ] : [
+        'Permiso denegado',
+        'Permite el acceso a la cámara cuando el navegador lo solicite.'
       ],
-      NotReadableError: [
-        'Cámara ocupada',
-        'Otra aplicación está usando la cámara. Ciérrala y reintenta.'
-      ],
-      AbortError:       [
-        'Cámara ocupada',
-        'Otra aplicación está usando la cámara. Ciérrala y reintenta.'
-      ],
+      NotFoundError:    ['Cámara no encontrada',   'Conecta una cámara y vuelve a intentarlo.'],
+      NotReadableError: ['Cámara ocupada',          'Otra aplicación está usando la cámara. Ciérrala y reintenta.'],
+      AbortError:       ['Cámara ocupada',          'Otra aplicación está usando la cámara. Ciérrala y reintenta.'],
     }
+
     const [titulo, desc] = mensajes[err?.name ?? ''] ?? [
       'Sin acceso a la cámara',
       'Verifica que la cámara esté conectada y funcione correctamente.'
@@ -177,10 +204,19 @@ export class RenderizadorUI {
 
     this.elEsTitulo.textContent = titulo
     this.elEsDesc.textContent   = desc
-    this.elEsReintentar.onclick = () => {
-      this.ocultarEstadoVacio()
-      onReintentar()
+
+    // Si está bloqueado el botón recarga la página en vez de reintentar
+    if (bloqueado) {
+      this.elEsReintentar.textContent = 'Recargar página'
+      this.elEsReintentar.onclick = () => location.reload()
+    } else {
+      this.elEsReintentar.textContent = 'Reintentar'
+      this.elEsReintentar.onclick = () => {
+        this.ocultarEstadoVacio()
+        onReintentar()
+      }
     }
+
     this.elEstadoVacio.removeAttribute('hidden')
   }
 
@@ -188,6 +224,7 @@ export class RenderizadorUI {
     this.elEstadoVacio.setAttribute('hidden', '')
   }
 
+  // ── Toasts ────────────────────────────────────────────────────────────────
   mostrarToast(id: string, mensaje: string, tipo: 'info' | 'warn' | 'error' = 'info', duracion = 5000): void {
     this.ocultarToast(id)
 
@@ -236,6 +273,7 @@ export class RenderizadorUI {
     if (timer !== undefined) { clearTimeout(timer); this._timersToast.delete(id) }
   }
 
+  // ── Onboarding ────────────────────────────────────────────────────────────
   mostrarOnboarding(): Promise<void> {
     if (localStorage.getItem('yoso-v1-onboarded')) return Promise.resolve()
     return new Promise(resolve => {
@@ -248,6 +286,7 @@ export class RenderizadorUI {
     })
   }
 
+  // ── Panel de depuración ───────────────────────────────────────────────────
   actualizarDebug(p: CargaDebug): void {
     const pRojo = (p.probRed      * 100).toFixed(1)
     const pEfec = (p.confEfectiva * 100).toFixed(1)
@@ -270,6 +309,7 @@ export class RenderizadorUI {
       this.dbDistRef.textContent     = '—'
     }
 
+    // Celdas de votos del buffer
     const ganador = this._ganadorBuffer(p.bufferActual)
     this.dbBuffer.textContent = ''
     Array(10).fill('').map((_, i) => p.bufferActual[i] ?? '').forEach(ch => {
@@ -301,6 +341,7 @@ export class RenderizadorUI {
       this.dbBarMem.style.width = '0%'
     }
 
+    // Top-3
     this.dbTop3.textContent = ''
     p.topN.forEach((item, idx) => {
       const contenedor = document.createElement('span')
@@ -318,6 +359,7 @@ export class RenderizadorUI {
     })
   }
 
+  // ── Aprendizaje — grid del alfabeto ───────────────────────────────────────
   resaltarSena(letra: string): void {
     if (letra === this.senaActiva) return
     this.limpiarSena()
@@ -337,6 +379,7 @@ export class RenderizadorUI {
     this.senaActiva = ''
   }
 
+  // ── Privados ──────────────────────────────────────────────────────────────
   private _construirAlfabeto(): void {
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letra => {
       const tarjeta = document.createElement('div')

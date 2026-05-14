@@ -1,7 +1,7 @@
 // ============================================================================
-// SW.JS — Service Worker
+// SW.JS — Service Worker YOSO (offline-first, cache-first para assets)
 // ============================================================================
-const CACHE = 'yoso-v2'
+const CACHE = 'yoso-v3'
 
 const PRECACHE = [
   '/',
@@ -18,6 +18,7 @@ self.addEventListener('install', e => {
           c.add(new Request(url, { cache: 'reload' })).catch(() => {})
         )
       ))
+      .catch(() => {})
   )
   self.skipWaiting()
 })
@@ -28,29 +29,70 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(
         keys.filter(k => k !== CACHE).map(k => caches.delete(k))
       ))
+      .catch(() => {})
   )
   self.clients.claim()
 })
 
 function guardarEnCache(req, res) {
-  // clone() debe llamarse sincrónicamente antes de cualquier await/then anidado
   const clone = res.clone()
-  caches.open(CACHE).then(c => c.put(req, clone))
+  caches.open(CACHE)
+    .then(c => c.put(req, clone))
+    .catch(() => {})
+}
+
+function safeMatch(req) {
+  // Envuelve caches.match en try/catch — en algunos contextos puede rechazar
+  try {
+    return caches.match(req).catch(() => undefined)
+  } catch {
+    return Promise.resolve(undefined)
+  }
 }
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return
 
-  const url = new URL(e.request.url)
+  let url
+  try {
+    url = new URL(e.request.url)
+  } catch {
+    return
+  }
 
-  // CDN externas: cache-first (URLs versionadas, inmutables)
-  const esCDN = url.hostname.includes('cdn.jsdelivr.net') ||
-                url.hostname.includes('fonts.googleapis.com') ||
-                url.hostname.includes('fonts.gstatic.com')
+  // Ignorar chrome-extension y otros esquemas no http(s)
+  if (!url.protocol.startsWith('http')) return
+
+  // ── Google Fonts: cache-first con fallback silencioso ──────
+  // No bloquear si falla — el browser usa fuentes del sistema
+  const esFonts = url.hostname.includes('fonts.googleapis.com') ||
+                  url.hostname.includes('fonts.gstatic.com')
+
+  if (esFonts) {
+    e.respondWith(
+      safeMatch(e.request).then(cached => {
+        if (cached) return cached
+        return fetch(e.request, { mode: 'cors' }).then(res => {
+          if (res.ok || res.type === 'opaque') guardarEnCache(e.request, res)
+          return res
+        }).catch(() => {
+          // Si Google Fonts falla, devolver respuesta vacía vacía — no bloquea el render
+          return new Response('', {
+            status: 200,
+            headers: { 'Content-Type': 'text/css' }
+          })
+        })
+      })
+    )
+    return
+  }
+
+  // ── CDN jsDelivr: cache-first ─────────────────────────────
+  const esCDN = url.hostname.includes('cdn.jsdelivr.net')
 
   if (esCDN) {
     e.respondWith(
-      caches.match(e.request).then(cached => {
+      safeMatch(e.request).then(cached => {
         if (cached) return cached
         return fetch(e.request).then(res => {
           if (res.ok || res.type === 'opaque') guardarEnCache(e.request, res)
@@ -61,28 +103,30 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // Navegación HTML: network-first, fallback a caché
+  // ── Navegación HTML: network-first ───────────────────────
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request)
         .then(res => {
-          guardarEnCache(e.request, res)
+          if (res.ok) guardarEnCache(e.request, res)
           return res
         })
         .catch(() =>
-          caches.match(e.request).then(c => c ?? caches.match('/'))
+          safeMatch(e.request)
+            .then(c => c ?? safeMatch('/'))
+            .then(c => c ?? new Response('Offline', { status: 503 }))
         )
     )
     return
   }
 
-  // Todo lo demás (JS, CSS, modelo ONNX, WASM): cache-first, actualizar en fondo
+  // ── Resto (JS, CSS, ONNX, WASM): cache-first ─────────────
   e.respondWith(
-    caches.match(e.request).then(cached => {
+    safeMatch(e.request).then(cached => {
       const networkFetch = fetch(e.request).then(res => {
         if (res.ok) guardarEnCache(e.request, res)
         return res
-      })
+      }).catch(() => new Response('', { status: 503 }))
       return cached ?? networkFetch
     })
   )

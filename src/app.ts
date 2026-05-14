@@ -19,9 +19,9 @@ interface ManosMediaPipe {
 }
 
 // Límites de la ROI en coordenadas normalizadas (0–1)
-const LIMITE_SUPERIOR  = 0.10
-const LIMITE_IZQUIERDO = 0.15
-const LIMITE_DERECHO   = 0.85
+const LIMITE_SUPERIOR  = 0.12
+const LIMITE_IZQUIERDO = 0.22
+const LIMITE_DERECHO   = 0.88
 
 // Luminancia media mínima aceptable (0–255)
 const UMBRAL_LUZ = 40
