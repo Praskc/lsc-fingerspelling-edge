@@ -123,12 +123,18 @@ export class YOSOApp {
 
   // ── Inicialización de cámara (reiniciable vía botón de reintento) ─────────────
   private async _iniciarCamara(): Promise<void> {
-    // Verificar permiso antes de iniciar MediaPipe para poder mostrar error amigable
+    // Resolución y cámara adaptativa según dispositivo
+    const esMobil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+    // En móvil pedir cámara frontal explícitamente como videollamada
+    const constraints: MediaStreamConstraints = esMobil
+      ? { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false }
+      : { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }
+
     try {
-      await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      await navigator.mediaDevices.getUserMedia(constraints)
     } catch (err) {
       const domErr = err as DOMException
-      // Si está bloqueado (NotAllowedError) mostrar instrucciones específicas
       if (domErr.name === 'NotAllowedError' || domErr.name === 'PermissionDeniedError') {
         this.ui.mostrarEstadoVacio(domErr, () => void this._iniciarCamara(), true)
       } else {
@@ -155,10 +161,8 @@ export class YOSOApp {
       this._alRecibirResultados(r)
     })
 
-    // Resolución adaptativa — móvil recibe 640x480, desktop 1280x720
-    const esMobil = window.innerWidth <= 768
-    const camW    = esMobil ? 640  : 1280
-    const camH    = esMobil ? 480  : 720
+    const camW = esMobil ? 640  : 1280
+    const camH = esMobil ? 480  : 720
 
     new Camera(this.video, {
       onFrame: async () => {
@@ -194,7 +198,7 @@ export class YOSOApp {
       if (oscuro !== this._toastLuzVivo) {
         this._toastLuzVivo = oscuro
         oscuro
-          ? this.ui.mostrarToast('luz', 'Parece que estás en un lugar oscuro — mejora la iluminación para que el modelo funcione mejor.', 'warn', 0)
+          ? this.ui.mostrarToast('luz', 'Poca luz detectada — busca una fuente de luz frente a ti para mejorar la precisión.', 'warn', 0)
           : this.ui.ocultarToast('luz')
       }
     } catch {
