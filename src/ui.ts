@@ -96,7 +96,11 @@ export class RenderizadorUI {
 
   // ── Splash ────────────────────────────────────────────────────────────────
   mensajeSplash(mensaje: string, esError = false): void {
-    this.elMsgSplash.textContent = mensaje
+    const textos: Record<string, string> = {
+      'Cargando modelo…':      'Preparando el motor de IA...',
+      '✗ Error al cargar el modelo': 'No se pudo cargar el modelo',
+    }
+    this.elMsgSplash.textContent = textos[mensaje] ?? mensaje
     this.elMsgSplash.classList.toggle('splash-error', esError)
   }
 
@@ -135,7 +139,7 @@ export class RenderizadorUI {
       this.elConfianza.textContent  = (confianza * 100).toFixed(1) + '%'
     } else {
       this.elPrediccion.textContent = '_'
-      this.elConfianza.textContent  = 'Detectando...'
+      this.elConfianza.textContent  = 'Buscando...'
     }
   }
 
@@ -171,41 +175,49 @@ export class RenderizadorUI {
 
   // ── Empty state — error de cámara ─────────────────────────────────────────
   mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void, bloqueado = false): void {
-    const esMobil = window.innerWidth <= 768
+    const esMobil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
     const mensajes: Record<string, [string, string]> = {
       NotAllowedError: bloqueado ? [
         'Cámara bloqueada',
         esMobil
-          ? 'Toca el ícono 🔒 en la barra del navegador → Permisos → Cámara → Permitir. Luego recarga la página.'
-          : 'Haz clic en el ícono 🔒 o 📷 en la barra de dirección → Permitir cámara → Recargar página.'
+          ? 'Toca el candado junto a la URL, entra a Permisos del sitio > Cámara > Permitir, y recarga.'
+          : 'Haz clic en el candado de la barra de dirección, entra a Permisos del sitio > Cámara > Permitir.'
       ] : [
-        'Permiso denegado',
-        'Permite el acceso a la cámara cuando el navegador lo solicite.'
+        'Se necesita acceso a la cámara',
+        'Pulsa "Permitir" cuando el navegador lo solicite para que YOSO pueda detectar tus señas.'
       ],
       PermissionDeniedError: bloqueado ? [
         'Cámara bloqueada',
         esMobil
-          ? 'Toca el ícono 🔒 en la barra del navegador → Permisos → Cámara → Permitir. Luego recarga la página.'
-          : 'Haz clic en el ícono 🔒 o 📷 en la barra de dirección → Permitir cámara → Recargar página.'
+          ? 'Toca el candado junto a la URL, entra a Permisos del sitio > Cámara > Permitir, y recarga.'
+          : 'Haz clic en el candado de la barra de dirección, entra a Permisos del sitio > Cámara > Permitir.'
       ] : [
-        'Permiso denegado',
-        'Permite el acceso a la cámara cuando el navegador lo solicite.'
+        'Se necesita acceso a la cámara',
+        'Pulsa "Permitir" cuando el navegador lo solicite para que YOSO pueda detectar tus señas.'
       ],
-      NotFoundError:    ['Cámara no encontrada',   'Conecta una cámara y vuelve a intentarlo.'],
-      NotReadableError: ['Cámara ocupada',          'Otra aplicación está usando la cámara. Ciérrala y reintenta.'],
-      AbortError:       ['Cámara ocupada',          'Otra aplicación está usando la cámara. Ciérrala y reintenta.'],
+      NotFoundError: [
+        'No se detectó ninguna cámara',
+        'Conecta una cámara a tu dispositivo e inténtalo de nuevo.'
+      ],
+      NotReadableError: [
+        'La cámara está en uso',
+        'Otra aplicación está usando la cámara. Ciérrala y vuelve a intentarlo.'
+      ],
+      AbortError: [
+        'La cámara está en uso',
+        'Otra aplicación está usando la cámara. Ciérrala y vuelve a intentarlo.'
+      ],
     }
 
     const [titulo, desc] = mensajes[err?.name ?? ''] ?? [
-      'Sin acceso a la cámara',
-      'Verifica que la cámara esté conectada y funcione correctamente.'
+      'No se pudo acceder a la cámara',
+      'Verifica que tu dispositivo tenga cámara y que el navegador tenga permiso para usarla.'
     ]
 
     this.elEsTitulo.textContent = titulo
     this.elEsDesc.textContent   = desc
 
-    // Si está bloqueado el botón recarga la página en vez de reintentar
     if (bloqueado) {
       this.elEsReintentar.textContent = 'Recargar página'
       this.elEsReintentar.onclick = () => location.reload()
@@ -234,8 +246,11 @@ export class RenderizadorUI {
     toast.setAttribute('role', 'alert')
 
     const icono   = document.createElement('span')
-    icono.className   = 'toast-icon'
-    icono.textContent = tipo === 'warn' ? '⚠' : tipo === 'error' ? '✕' : 'ℹ'
+    icono.className = 'toast-icon'
+    const svgWarn  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    const svgError = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+    const svgInfo  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+    icono.innerHTML = tipo === 'warn' ? svgWarn : tipo === 'error' ? svgError : svgInfo
 
     const texto   = document.createElement('span')
     texto.className   = 'toast-msg'

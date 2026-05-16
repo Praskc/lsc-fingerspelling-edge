@@ -111,7 +111,7 @@ export class YOSOApp {
       this.ui.ocultarSplash()
 
     } catch (err) {
-      this.ui.mensajeSplash('✗ Error al cargar el modelo', true)
+      this.ui.mensajeSplash('Error al cargar el modelo', true)
       console.error('[YOSO] Arranque fallido:', err)
       return
     }
@@ -151,8 +151,8 @@ export class YOSOApp {
     manos.setOptions({
       maxNumHands:            1,
       modelComplexity:        0,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence:  0.5
+      minDetectionConfidence: 0.80,  // subido de 0.7 — descarta detecciones dudosas
+      minTrackingConfidence:  0.70   // subido de 0.5 — exige tracking más estable
     })
 
     let skeletonOculto = false
