@@ -115,7 +115,7 @@ export class RenderizadorUI {
   // ── Indicador de listo ────────────────────────────────────────────────────
   estadoListo(estado: 'idle' | 'signing' | 'warning'): void {
     this.elIndicadorListo.className = `ready-indicator ${estado}`
-    this.elEtiquetaListo.textContent = estado === 'signing' ? 'LEYENDO SEÑA...'
+    this.elEtiquetaListo.textContent = estado === 'signing' ? 'LEYENDO...'
                                      : estado === 'warning' ? 'FUERA DE ZONA'
                                      : 'LISTO PARA LEER'
   }

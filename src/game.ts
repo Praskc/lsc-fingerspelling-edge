@@ -1,12 +1,58 @@
-import { signURI } from './signs'
+import { signURI }  from './signs'
+import { BORRAR }   from './inference'
 
 const NIVELES = [
   { nivel: 1, minLen: 3, maxLen: 4, req: 3,  label: 'NOVATO'   },
-  { nivel: 2, minLen: 4, maxLen: 5, req: 5,  label: 'BASICO'   },
+  { nivel: 2, minLen: 4, maxLen: 5, req: 5,  label: 'BÁSICO'   },
   { nivel: 3, minLen: 5, maxLen: 6, req: 7,  label: 'MEDIO'    },
   { nivel: 4, minLen: 6, maxLen: 7, req: 9,  label: 'AVANZADO' },
   { nivel: 5, minLen: 7, maxLen: 9, req: 12, label: 'MAESTRO'  },
 ]
+
+// Banco de palabras en español sin tildes ni Ñ (A-Z). Fallback cuando Datamuse
+// no está disponible; también garantiza que jamás aparezca una palabra inglesa.
+const BANCO: Record<number, string[]> = {
+  1: [
+    'SOL','MAR','PAZ','LUZ','RED','PAN','SAL','FIN','GAS','LEY',
+    'RIO','REY','MES','PIE','OLA','ERA','BAR','PEZ','GOL','BUS',
+    'GEL','MIL','TOS','DIA','COL','CAL','MAL','SON','VEZ','VOZ',
+    'VER','SER','DAR','SUR','HAZ','DON','FAX','DOS','HOY','TAN',
+    'AJO','OJO','ESO','HAY','FEO','UVA','UNO','ORO','OSO','IRA',
+    'AUN','BOL','OCA','AMO','TAL','BIO','ROL','OIR','VAL','DIO',
+  ],
+  2: [
+    'CASA','VIDA','MANO','AGUA','GATO','LUNA','PASO','MESA','FARO','ISLA',
+    'BOCA','CARA','PIEL','PESO','TREN','CAMA','SOPA','PELO','POZO','LAGO',
+    'VINO','TORO','MAIZ','POLO','ROCA','COLA','MASA','MAPA','BALA','CERO',
+    'HORA','PISO','ROPA','NAVE','VELA','LONA','PATO','PICO','TELA','ROJO',
+    'GRIS','LIMA','PUMA','LOTO','CUNA','DAMA','FOCA','GUIA','JOYA','LOCO',
+    'MODO','TAZA','VASO','SACO','DADO','HUMO','HOJA','PINO','REMO','YESO',
+  ],
+  3: [
+    'CAMPO','FUEGO','MUNDO','PLAYA','LIBRO','SUELO','TIGRE','NORTE','VAPOR','ARENA',
+    'BRISA','MONTE','PRADO','TRIGO','BARCO','GLOBO','HOTEL','LIMON','MANGO','OASIS',
+    'PIANO','QUESO','RADIO','SALSA','TALLO','VIAJE','PERRO','CABRA','CERDO','CEBRA',
+    'FERIA','TURCO','PROSA','CACAO','CORAL','CREMA','DRAMA','EBANO','FINCA','GRUTA',
+    'IDEAL','JABON','KARMA','LLANO','METAL','PALMO','RASGO','SABOR','TESIS','TEXTO',
+    'ATLAS','BURRO','CAJON','DELTA','FIBRA','GANSO','VOCAL','BARRO','CALOR','CLAVO',
+  ],
+  4: [
+    'CIUDAD','PUENTE','CAMINO','FRENTE','BOSQUE','CENTRO','MARINA','LATIDO','ORIGEN','PALOMA',
+    'ABISMO','CIERRE','FLORES','FUENTE','GRANJA','HOMBRE','INDICE','JARDIN','LECTOR','MILLON',
+    'NACION','OBJETO','REGION','SABANA','URBANO','CASERO','FLAUTA','GALEON','HAMBRE','INICIO',
+    'JUICIO','LADERA','MARGEN','NAVAJA','OFERTA','PAGINA','RACION','SECTOR','TALLER','VELERO',
+    'ALMEJA','CALIMA','HELADO','JABALI','MANTEL','PELUCA','RANCHO','SOBRIO','TESORO','BLOQUE',
+    'CRIMEN','DEBATE','EQUIPO','FIGURA','IDIOMA','LITROS','MUCHOS','PRECIO','ESTADO','FRESCO',
+  ],
+  5: [
+    'SISTEMA','PROCESO','CONTROL','CIENCIA','BALANCE','TABLERO','USUARIO','VENTANA','RECURSO','PALABRA',
+    'AGENCIA','CONSEJO','DESTINO','EJEMPLO','FESTIVO','GALERIA','JORNADA','LAMPARA','MAESTRO','NOTICIA',
+    'OPINION','PERIODO','QUILATE','SOLDADO','TESTIGO','VIERNES','ABOGADO','BARRERA','CAPITAN','EMPRESA',
+    'HELECHO','IMPACTO','JUZGADO','LABORAL','MENSAJE','NEGOCIO','PALACIO','RAQUETA','TERMINO','TRABAJO',
+    'ALCOHOL','CALIDAD','ESTUDIO','FORMULA','TECLADO','TORPEDO','PLANETA','ESTABLO','FRAGATA','GANADOR',
+    'CAMBIOS','DERECHO','ESTUCHE','FACTURA','INFORME','MATERIA','NAVIDAD','OCULTAR','LACRADO','HAMSTER',
+  ],
+}
 
 export class GameManager {
   private readonly elObjetivo:    HTMLElement
@@ -43,7 +89,7 @@ export class GameManager {
     this.nivelIdx   = 0
     this.puntos     = 0
     this.palabrasOk = 0
-    this.elPuntuacion.innerText = '0'
+    this.elPuntuacion.textContent = '0'
     this._setFeedback('CARGANDO...', 'idle')
     await this._cargarPool()
     this._nuevaPalabra()
@@ -57,7 +103,7 @@ export class GameManager {
 
   public onLetraConfirmada(letra: string): void {
     if (!this.activo || this.bloqueado) return
-    if (letra === ' ' || letra === '\u232b') return
+    if (letra === ' ' || letra === BORRAR) return
     letra === this.palabraActual[this.letraIdx]
       ? this._letraCorrecta()
       : this._letraIncorrecta(letra)
@@ -66,7 +112,7 @@ export class GameManager {
   private async _cargarPool(): Promise<void> {
     const { minLen, maxLen } = NIVELES[this.nivelIdx]
     try {
-      const url = `https://api.datamuse.com/words?sp=${'?'.repeat(minLen)}&v=es&max=200`
+      const url = `https://api.datamuse.com/words?sp=${'?'.repeat(minLen)}&v=es&max=400`
       const res = await fetch(url)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data: { word: string }[] = await res.json()
@@ -76,28 +122,25 @@ export class GameManager {
         .filter(w =>
           w.length >= minLen &&
           w.length <= maxLen &&
-          /^[A-Z]+$/.test(w)
+          /^[A-Z]+$/.test(w) &&
+          !/TH|CK|WH|GH/.test(w)   // patrones exclusivos del inglés
         )
-        .sort(() => Math.random() - 0.5)
+
+      for (let i = filtradas.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]]
+      }
 
       if (filtradas.length < 5) throw new Error('Pool insuficiente')
       this.pool = filtradas
 
     } catch (err) {
       console.warn('[GameManager] Datamuse falló, usando banco local:', err)
-      // Banco de respaldo por nivel — solo letras A-Z sin tildes
-      const BANCO: Record<number, string[]> = {
-        1: ['SOL','MAR','PAZ','LUZ','RED','PAN','CAL','FIN','GAS','VAL'],
-        2: ['CASA','VIDA','MANO','AGUA','GATO','LUNA','PASO','MESA','FARO','ISLA'],
-        3: ['CAMPO','FUEGO','MUNDO','PLAYA','LIBRO','SUELO','TIGRE','NORTE','VAPOR','ARENA'],
-        4: ['CIUDAD','PUENTE','CAMINO','FRENTE','BOSQUE','CENTRO','MARINA','LATIDO','ORIGEN','PALOMA'],
-        5: ['SISTEMA','PROCESO','CONTROL','CIENCIA','BALANCE','TABLERO','USUARIO','VENTANA','RECURSO','PALABRA'],
-      }
       const nivel = this.nivelIdx + 1
       this.pool = [...(BANCO[nivel] ?? BANCO[1])].sort(() => Math.random() - 0.5)
       this._setFeedback('SIN CONEXIÓN — MODO LOCAL', 'warn')
       window.setTimeout(() => {
-        if (this.activo && !this.bloqueado) this._setFeedback('HACIENDO SEÑA...', 'idle')
+        if (this.activo && !this.bloqueado) this._setFeedback('HAZ LA SEÑA...', 'idle')
       }, 2000)
     }
   }
@@ -107,7 +150,7 @@ export class GameManager {
     this.elImagenPista.classList.remove('visible')
     this.bloqueado = false
     this.letraIdx  = 0
-    this.elNivel.innerText = NIVELES[this.nivelIdx].label
+    this.elNivel.textContent = NIVELES[this.nivelIdx].label
 
     if (this.pool.length === 0) {
       this._cargarPool().then(() => this._nuevaPalabra())
@@ -118,7 +161,7 @@ export class GameManager {
     this.errores = 0
     this._renderPalabra()
     this._renderProgreso()
-    this._setFeedback('HACIENDO SEÑA...', 'idle')
+    this._setFeedback('HAZ LA SEÑA...', 'idle')
 
     this.timerPista = window.setTimeout(() => {
       if (this.activo && !this.bloqueado) {
@@ -137,7 +180,7 @@ export class GameManager {
       this.bloqueado   = true
       this.puntos     += this.palabraActual.length * 10
       this.palabrasOk++
-      this.elPuntuacion.innerText = String(this.puntos)
+      this.elPuntuacion.textContent = String(this.puntos)
       this.elPuntuacion.classList.remove('score-bump')
       void this.elPuntuacion.offsetWidth
       this.elPuntuacion.classList.add('score-bump')
@@ -160,7 +203,7 @@ export class GameManager {
     } else {
       this._setFeedback('CORRECTO', 'success')
       window.setTimeout(() => {
-        if (this.activo && !this.bloqueado) this._setFeedback('HACIENDO SEÑA...', 'idle')
+        if (this.activo && !this.bloqueado) this._setFeedback('HAZ LA SEÑA...', 'idle')
       }, 500)
     }
   }
@@ -181,7 +224,7 @@ export class GameManager {
 
     this._setFeedback(`"${letra}" - NECESITAS "${this.palabraActual[this.letraIdx]}" · ${3 - this.errores} intentos`, 'error')
     window.setTimeout(() => {
-      if (this.activo && !this.bloqueado) this._setFeedback('HACIENDO SEÑA...', 'idle')
+      if (this.activo && !this.bloqueado) this._setFeedback('HAZ LA SEÑA...', 'idle')
     }, 900)
   }
 
@@ -204,7 +247,7 @@ export class GameManager {
   private _renderProgreso(): void {
     const { req } = NIVELES[this.nivelIdx]
     const pct = Math.round((this.palabrasOk / req) * 100)
-    this.elProgreso.innerText      = `${this.palabrasOk}/${req}`
+    this.elProgreso.textContent      = `${this.palabrasOk}/${req}`
     this.elProgresoBar.style.width = `${pct}%`
   }
 

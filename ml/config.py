@@ -47,4 +47,4 @@ WEIGHT_DECAY = 0.01
 
 ONNX_PATH      = os.path.join(_ROOT, 'public', 'YOSO.onnx')
 CENTROIDS_PATH = os.path.join(_ROOT, 'public', 'Centroides.json')
-PTH_PATH       = os.path.join(_ROOT, 'model', 'best_model.pth')
+PTH_PATH       = os.path.join(_ROOT, 'ml', 'model', 'best_model.pth')

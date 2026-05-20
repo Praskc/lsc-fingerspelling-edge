@@ -128,7 +128,7 @@ export class YOSOApp {
 
     // En móvil pedir cámara frontal explícitamente como videollamada
     const constraints: MediaStreamConstraints = esMobil
-      ? { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false }
+      ? { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
       : { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }
 
     try {
@@ -162,7 +162,7 @@ export class YOSOApp {
     })
 
     const camW = esMobil ? 640  : 1280
-    const camH = esMobil ? 480  : 720
+    const camH = esMobil ? 360  : 720
 
     new Camera(this.video, {
       onFrame: async () => {

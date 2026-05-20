@@ -217,6 +217,7 @@ body {
   .tab-panel.active { overflow: visible; }
   .output-panel, .game-panel, .learn-panel { flex: none; min-height: 220px; overflow: visible; }
   .alphabet-grid { max-height: 420px; }
+  .canvas-wrapper { aspect-ratio: auto; }
 }
 
 /* ════════════════════════════════════════════════════════════════

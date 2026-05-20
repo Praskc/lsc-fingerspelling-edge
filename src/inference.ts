@@ -30,6 +30,7 @@ export class MotorInferencia {
   // Buffers preasignados — evitan GC por frame
   private readonly bufCoords   = new Float32Array(42)
   private readonly bufFeatures = new Float32Array(48)
+  private          bufSoftmax  = new Float32Array(0)   // se dimensiona en primer uso
 
   // Estado del buffer de votación ponderada
   private bufferVotos: Array<{ letra: string; peso: number }> = []
@@ -46,12 +47,9 @@ export class MotorInferencia {
     this.cb         = opts.callbacks
   }
 
-  // forzar=true: reset completo (cambio de modo, tab oculto).
-  // forzar=false (default): solo limpia buffer — ultimaLetra se preserva para
-  // evitar que un parpadeo del detector desbloquee la repetición.
-  // forzar=true: reset completo (cambio de modo, tab oculto).
   // forzar=false (default): solo limpia buffer — ultimaLetra y ultimoTiempoEscritura
   // se preservan para que el cooldown sobreviva parpadeos del detector.
+  // forzar=true: reset completo (cambio de modo, tab oculto).
   public reiniciar(forzar = false): void {
     this.bufferVotos = []
     this._procesando = false
@@ -175,22 +173,24 @@ export class MotorInferencia {
   }
 
   private _softmax(logits: Float32Array): { probs: Float32Array; indicePico: number; probPico: number } {
+    if (this.bufSoftmax.length !== logits.length) {
+      this.bufSoftmax = new Float32Array(logits.length)
+    }
     let maxLogit = -Infinity, indicePico = 0
     for (let i = 0; i < logits.length; i++) {
       if (logits[i] > maxLogit) { maxLogit = logits[i]; indicePico = i }
     }
     let sumaExp = 0
-    const probs = new Float32Array(logits.length)
     for (let i = 0; i < logits.length; i++) {
-      probs[i] = Math.exp(logits[i] - maxLogit)
-      sumaExp += probs[i]
+      this.bufSoftmax[i] = Math.exp(logits[i] - maxLogit)
+      sumaExp += this.bufSoftmax[i]
     }
     let probPico = 0
-    for (let i = 0; i < probs.length; i++) {
-      probs[i] /= sumaExp
-      if (probs[i] > probPico) probPico = probs[i]
+    for (let i = 0; i < this.bufSoftmax.length; i++) {
+      this.bufSoftmax[i] /= sumaExp
+      if (this.bufSoftmax[i] > probPico) probPico = this.bufSoftmax[i]
     }
-    return { probs, indicePico, probPico }
+    return { probs: this.bufSoftmax, indicePico, probPico }
   }
 
   private _juezUR(letra: string, puntos: Punto[], esCamaraIzquierda: boolean): string {
@@ -228,6 +228,3 @@ export class MotorInferencia {
   }
 }
 
-// ── Alias de compatibilidad ──────────────────────────────────────────────────
-/** @deprecated usa MotorInferencia */
-export const InferenceEngine = MotorInferencia

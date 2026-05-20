@@ -73,7 +73,7 @@ self.addEventListener('fetch', e => {
       safeMatch(e.request).then(cached => {
         if (cached) return cached
         return fetch(e.request, { mode: 'cors' }).then(res => {
-          if (res.ok || res.type === 'opaque') guardarEnCache(e.request, res)
+          if (res.ok) guardarEnCache(e.request, res)
           return res
         }).catch(() => {
           // Si Google Fonts falla, devolver respuesta vacía vacía — no bloquea el render

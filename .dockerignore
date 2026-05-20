@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.github
+.claude
+.vercel
+.vscode
+ml
+model
+package-lock.json
+yarn.lock
+*.md

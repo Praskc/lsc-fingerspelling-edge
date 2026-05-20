@@ -4,25 +4,16 @@ export interface Punto {
   z: number
 }
 
-/** @deprecated usa Punto */
-export type Landmark = Punto
-
 export interface Lateralidad {
   label: 'Left' | 'Right'
   score: number
 }
-
-/** @deprecated usa Lateralidad */
-export type Handedness = Lateralidad
 
 export interface ResultadoManos {
   image:               HTMLVideoElement | HTMLCanvasElement
   multiHandLandmarks:  Punto[][]
   multiHandedness:     Lateralidad[]
 }
-
-/** @deprecated usa ResultadoManos */
-export type HandsResult = ResultadoManos
 
 export interface ItemTop {
   letra: string
@@ -39,18 +30,12 @@ export interface CargaDebug {
   bufferProgreso: number   // 0–1, maxPeso acumulado / PESO_MINIMO_VOTOS
 }
 
-/** @deprecated usa CargaDebug */
-export type DebugPayload = CargaDebug
-
 export interface Centroide {
   coords:   Float32Array
   dist_ref: number
 }
 
 export type MapaCentroides = Record<string, Centroide>
-
-/** @deprecated usa MapaCentroides */
-export type CentroidesMap = MapaCentroides
 
 export interface CallbacksInferencia {
   alConfirmarLetra:    (letra: string) => void
@@ -63,6 +48,3 @@ export interface OpcionesInicioInferencia {
   centroides: MapaCentroides | null
   callbacks:  CallbacksInferencia
 }
-
-/** @deprecated usa OpcionesInicioInferencia */
-export type InferenceInitOptions = OpcionesInicioInferencia
