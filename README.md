@@ -13,8 +13,6 @@
 
 </div>
 
----
-
 ## ¿Qué es YOSO?
 
 YOSO es un sistema completo de reconocimiento del alfabeto dactilológico de la **Lengua de Señas Colombiana (LSC)** que corre **100% en el navegador**, sin servidor, sin conexión a internet y con latencia de inferencia menor a 10ms.
@@ -22,8 +20,6 @@ YOSO es un sistema completo de reconocimiento del alfabeto dactilológico de la 
 El sistema fue desarrollado con el propósito de reducir las barreras de comunicación de la comunidad sorda colombiana, utilizando tecnología de edge computing accesible desde cualquier dispositivo con cámara y navegador, sin necesidad de infraestructura costosa.
 
 > **Estado actual:** El modelo base fue entrenado con datos ASL como prueba de concepto. La migración completa a LSC está en progreso con dataset propio recolectado con la comunidad sorda colombiana en colaboración con intérpretes certificados de LSC.
-
----
 
 ## Pipeline completo
 
@@ -50,8 +46,6 @@ Input(48) → Linear(512) → ReLU → Dropout(0.35)   ┐
 | Latencia de inferencia | **< 10ms** |
 | Tamaño del modelo ONNX | ~2.4 MB |
 
----
-
 ## Feature Engineering — 48 features
 
 | Features | Descripción |
@@ -64,8 +58,6 @@ Input(48) → Linear(512) → ReLU → Dropout(0.35)   ┐
 1. Traslación al origen desde la muñeca (landmark 0)
 2. Escala fija por distancia muñeca→nudillo medio (landmark 9) — invariante a distancia cámara-mano
 3. Flip del eje X para mano izquierda — invarianza de lateralidad, ambidiestro por diseño
-
----
 
 ## Motor de inferencia
 
@@ -91,8 +83,6 @@ Red neuronal → Softmax estable → Juez U/R → Filtro zona gris → Buffer vo
 | SPACE / DELETE | 400 ms |
 
 **Escudo cinético** — SPACE y DELETE requieren jitter < 0.02 para evitar activación accidental por movimiento
-
----
 
 ## Pipeline de entrenamiento
 
@@ -128,8 +118,6 @@ Red neuronal → Softmax estable → Juez U/R → Filtro zona gris → Buffer vo
 | [ASL Alphabet Dataset](https://www.kaggle.com/datasets/debashishsau/aslamerican-sign-language-aplhabet-dataset) | Debashish Sau | CC0 | ~270.000 | Base de entrenamiento |
 | Dataset LSC propio | Comunidad sorda colombiana | — | En recolección | Fine-tuning LSC |
 
----
-
 ## Diferencias LSC vs ASL
 
 El alfabeto manual colombiano tiene **32 configuraciones** para las 27 letras del español. Las principales diferencias con ASL relevantes para el modelo:
@@ -148,8 +136,6 @@ El alfabeto manual colombiano tiene **32 configuraciones** para las 27 letras de
 
 Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU** ligera separada de la FCNN principal, diseñada para deployment en ESP32-S3.
 
----
-
 ## Features de la aplicación
 
 - **Traductor en tiempo real** — concatenación con cooldown de 800ms, soporte SPACE y DELETE
@@ -162,8 +148,6 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 - **Detección de luminosidad** — muestreo de 576 px cada ~3 s, aviso si el entorno está oscuro
 - **Pausa automática** — Page Visibility API pausa la inferencia cuando la pestaña está oculta
 - **Panel de debug** — confianza red, confianza efectiva, distancia a centroide, buffer de votación, top-3 clases, RAM heap
-
----
 
 ## Estructura del proyecto
 
@@ -199,8 +183,6 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 └── tsconfig.json       # TypeScript strict mode
 ```
 
----
-
 ## Instalación y uso
 
 ### Requisitos
@@ -235,8 +217,6 @@ cp ml/model/Centroides.json public/
 
 > **Consistencia crítica:** `ml/extract.py`, `ml/train.py` e `src/inference.ts` implementan el mismo pipeline de normalización anatómica. Cualquier cambio debe aplicarse en los tres.
 
----
-
 ## Despliegue
 
 ### Vercel
@@ -244,7 +224,7 @@ cp ml/model/Centroides.json public/
 Listo para desplegar sin configuración adicional. `vercel.json` configura los headers COOP/COEP necesarios para ONNX Runtime WASM con multithreading.
 
 ```bash
-pnpm build
+pnpm run build
 # Conectar el repositorio en vercel.com — detección automática de Vite
 ```
 
@@ -259,8 +239,6 @@ docker compose up --build -d       # En segundo plano
 
 El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutable`, modelo 7 días, SW sin caché) y envía los headers COOP/COEP en todas las rutas.
 
----
-
 ## Notas técnicas
 
 **Lateralidad MediaPipe** — MediaPipe etiqueta desde perspectiva de cámara (espejo). `'Left'` en MediaPipe = mano derecha del usuario. El flip de eje X se aplica cuando `handedness.label === 'Right'`
@@ -270,8 +248,6 @@ El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutabl
 **SharedArrayBuffer** — ONNX Runtime WASM con `intraOpNumThreads: 2` requiere los headers `Cross-Origin-Opener-Policy: same-origin` y `Cross-Origin-Embedder-Policy: require-corp`. Configurados en `vite.config.ts` (dev/preview), `vercel.json` (producción Vercel) y `docker/nginx.conf` (Docker)
 
 **Service Worker y modelo ONNX** — el modelo (2.4 MB) se precachea en la instalación del SW. Tras la primera carga la app funciona completamente offline
-
----
 
 ## Ramas
 
@@ -309,8 +285,6 @@ El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutabl
 - Filtro zona gris por clase con dist_ref P75
 - Dataset unificado ~360k muestras, 98.63% accuracy
 
----
-
 ## Roadmap
 
 ### En progreso
@@ -324,13 +298,9 @@ El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutabl
 - [ ] Coordenada Z de MediaPipe en extracción de features — reduce falsos positivos por oclusión
 - [ ] Features de curvatura e ángulos inter-dedo para M/N/E/S
 
----
-
 ## Contexto
 
 Este proyecto nace en **Sucre, Colombia**. El reconocimiento de lengua de señas es un derecho de comunicación, no un producto — por ende YOSO es y será siempre open source, desarrollado en colaboración con la comunidad sorda colombiana de la universidad de Sucre.
-
----
 
 ## Autor
 
