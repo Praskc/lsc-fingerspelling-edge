@@ -153,7 +153,7 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 ## Features de la aplicación
 
 - **Traductor en tiempo real** — concatenación con cooldown de 800ms, soporte SPACE y DELETE
-- **Motor de gamificación** — palabras en español por niveles via Datamuse API, skip automático tras 3 errores
+- **Motor de gamificación** — 5 niveles de dificultad, banco local de 300 palabras en español (60 por nivel) sin dependencia externa; Datamuse API como fuente opcional de variedad adicional cuando hay conexión
 - **Modo aprendizaje** — grid del alfabeto ASL interactivo, la seña detectada se ilumina en tiempo real
 - **ROI adaptativo** — región de interés visual sincronizada con límites de detección, advertencia cuando la mano sale de zona
 - **PWA instalable** — funciona offline, carga instantánea, service worker con cache-first para modelo y assets
@@ -171,10 +171,10 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 ├── src/
 │   ├── app.ts          # Orquestador — pipeline MediaPipe, ROI, visibilidad, luminosidad
 │   ├── inference.ts    # Motor de IA — preprocesado, softmax, filtros, buffer de votos
-│   ├── game.ts         # Motor de gamificación — palabras por niveles
+│   ├── game.ts         # Motor de gamificación — palabras por niveles, banco local 300 palabras
 │   ├── ui.ts           # Capa DOM — HUD, toasts, onboarding, empty state, debug
 │   ├── types.ts        # Interfaces TypeScript
-│   ├── signs.ts        # URIs de imágenes de referencia para el alfabeto
+│   ├── signs.ts        # Diagramas SVG orgánicos del alfabeto ASL (perspectiva observador)
 │   ├── styles.css      # UI fluid con CSS custom properties + container queries
 │   └── main.ts         # Entry point + registro del Service Worker
 ├── public/
@@ -187,8 +187,12 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 │   ├── extract.py      # Extractor de landmarks desde imágenes del dataset
 │   ├── train.py        # Entrenamiento, limpieza IQR, exportación ONNX
 │   ├── features.py     # Feature engineering compartido
-│   └── config.py       # Configuración del pipeline ML
-├── model/              # Salida del entrenamiento (ONNX + JSON) — no versionado
+│   ├── config.py       # Configuración del pipeline ML
+│   └── model/          # Salida del entrenamiento (ONNX + JSON) — no versionado
+├── docker/
+│   ├── Dockerfile      # Multi-stage: node:22-alpine builder → nginx:1.27-alpine runtime
+│   └── nginx.conf      # Caché diferenciada por tipo, COOP/COEP, gzip
+├── compose.yaml        # Docker Compose — puerto 8080
 ├── index.html          # HTML principal
 ├── vite.config.ts      # Headers COOP/COEP para SharedArrayBuffer (WASM threads) en dev/preview
 ├── vercel.json         # Headers COOP/COEP para producción en Vercel
@@ -201,14 +205,14 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 
 ### Requisitos
 
-- Node.js 18+
+- Node.js 18+ y pnpm
 
 ```bash
 git clone https://github.com/Praskc/Motor-de-inferencia-web-ASL-usando-mediapipe-landmarks-y-edge-computing.git
 cd Motor-de-inferencia-web-ASL-usando-mediapipe-landmarks-y-edge-computing
 git checkout refactor
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Abre `http://localhost:5173` y permite acceso a la cámara.
@@ -221,12 +225,12 @@ pip install torch torchvision pandas numpy scikit-learn onnx
 # Extraer features desde imágenes
 python ml/extract.py
 
-# Entrenar — exporta YOSO.onnx y Centroides.json a model/
+# Entrenar — exporta YOSO.onnx y Centroides.json a ml/model/
 python ml/train.py
 
 # Copiar al directorio public para que Vite los sirva
-cp model/YOSO.onnx public/
-cp model/Centroides.json public/
+cp ml/model/YOSO.onnx public/
+cp ml/model/Centroides.json public/
 ```
 
 > **Consistencia crítica:** `ml/extract.py`, `ml/train.py` e `src/inference.ts` implementan el mismo pipeline de normalización anatómica. Cualquier cambio debe aplicarse en los tres.
@@ -235,12 +239,25 @@ cp model/Centroides.json public/
 
 ## Despliegue
 
-El proyecto está listo para desplegarse en Vercel sin configuración adicional. El `vercel.json` incluido configura los headers COOP/COEP necesarios para que ONNX Runtime WASM funcione con multithreading.
+### Vercel
+
+Listo para desplegar sin configuración adicional. `vercel.json` configura los headers COOP/COEP necesarios para ONNX Runtime WASM con multithreading.
 
 ```bash
-npm run build   # Genera dist/
+pnpm build
 # Conectar el repositorio en vercel.com — detección automática de Vite
 ```
+
+### Docker
+
+Build multi-stage: construye con Node 22 Alpine y sirve con nginx 1.27 Alpine. La imagen final pesa ~25 MB.
+
+```bash
+docker compose up --build          # Levanta en http://localhost:8080
+docker compose up --build -d       # En segundo plano
+```
+
+El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutable`, modelo 7 días, SW sin caché) y envía los headers COOP/COEP en todas las rutas.
 
 ---
 
@@ -250,7 +267,7 @@ npm run build   # Genera dist/
 
 **M y N** — son las clases con mayor varianza intra-clase por oclusión de dedos superpuestos. Sus dist_ref son 5-6× más altas que el resto
 
-**SharedArrayBuffer** — ONNX Runtime WASM con `intraOpNumThreads: 2` requiere los headers `Cross-Origin-Opener-Policy: same-origin` y `Cross-Origin-Embedder-Policy: require-corp`. Configurados en `vite.config.ts` (dev/preview) y `vercel.json` (producción)
+**SharedArrayBuffer** — ONNX Runtime WASM con `intraOpNumThreads: 2` requiere los headers `Cross-Origin-Opener-Policy: same-origin` y `Cross-Origin-Embedder-Policy: require-corp`. Configurados en `vite.config.ts` (dev/preview), `vercel.json` (producción Vercel) y `docker/nginx.conf` (Docker)
 
 **Service Worker y modelo ONNX** — el modelo (2.4 MB) se precachea en la instalación del SW. Tras la primera carga la app funciona completamente offline
 
@@ -278,6 +295,13 @@ npm run build   # Genera dist/
 - `vercel.json` con COOP/COEP headers para Vercel
 - Vite 6.4.2, onnxruntime-web 1.25.1 fijado, 0 vulnerabilidades
 - Fix XSS: `createElement` en vez de `innerHTML` para datos de API externa
+- Migración npm → pnpm
+- Resolución adaptativa de cámara para móviles (front-facing explícito)
+- Despliegue Docker: multi-stage build + nginx con COOP/COEP y caché diferenciada
+- Pipeline ML reorganizado en `ml/model/`
+- Diagramas SVG del alfabeto rediseñados: dedos orgánicos con bezier, perspectiva de observador correcta
+- Banco local de 300 palabras en español (60 por nivel) — juego funcional sin conexión
+- Filtro de anglicismos en Datamuse (TH, CK, WH, GH)
 
 ### v1 — main (legacy)
 - Pipeline de 48 features con normalización anatómica
@@ -297,7 +321,8 @@ npm run build   # Genera dist/
 ### Siguiente fase
 - [ ] Cuantización INT8 para deployment en ESP32-S3 — TinyML edge
 - [ ] Panel de referencia visual con todas las señas LSC
-- [ ] Soporte móvil completo
+- [ ] Coordenada Z de MediaPipe en extracción de features — reduce falsos positivos por oclusión
+- [ ] Features de curvatura e ángulos inter-dedo para M/N/E/S
 
 ---
 
