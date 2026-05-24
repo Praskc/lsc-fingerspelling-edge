@@ -6,7 +6,6 @@ const COOP_HEADERS = {
   'Cross-Origin-Embedder-Policy': 'require-corp',
 }
 
-// Los .wasm de ORT se sirven desde CDN via ort.env.wasm.wasmPaths — no van al bundle
 const excluirWasmOrt: Plugin = {
   name: 'excluir-wasm-ort',
   generateBundle(_, bundle) {
@@ -17,10 +16,10 @@ const excluirWasmOrt: Plugin = {
 }
 
 export default defineConfig({
-  server:  { port: 5173, headers: COOP_HEADERS },
+  server:  { port: 5173, headers: COOP_HEADERS, allowedHosts: true },
   preview: { headers: COOP_HEADERS },
   optimizeDeps: {
-    exclude: ['onnxruntime-web']
+    exclude: ['onnxruntime-web', '@mediapipe/tasks-vision']
   },
   build: {
     rollupOptions: {
