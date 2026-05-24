@@ -1,7 +1,7 @@
 // ============================================================================
 // SW.JS — Service Worker YOSO (offline-first, cache-first para assets)
 // ============================================================================
-const CACHE = 'yoso-v3'
+const CACHE = 'yoso-v6'
 
 const PRECACHE = [
   '/',
@@ -72,7 +72,7 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       safeMatch(e.request).then(cached => {
         if (cached) return cached
-        return fetch(e.request, { mode: 'cors' }).then(res => {
+        return fetch(new Request(e.request.url, { mode: 'cors', credentials: 'omit' })).then(res => {
           if (res.ok) guardarEnCache(e.request, res)
           return res
         }).catch(() => {
@@ -82,6 +82,22 @@ self.addEventListener('fetch', e => {
             headers: { 'Content-Type': 'text/css' }
           })
         })
+      })
+    )
+    return
+  }
+
+  // ── Google Storage (modelo hand_landmarker.task): cache-first ───────────
+  const esGoogleStorage = url.hostname === 'storage.googleapis.com'
+
+  if (esGoogleStorage) {
+    e.respondWith(
+      safeMatch(e.request).then(cached => {
+        if (cached) return cached
+        return fetch(e.request).then(res => {
+          if (res.ok || res.type === 'opaque') guardarEnCache(e.request, res)
+          return res
+        }).catch(() => new Response('', { status: 503 }))
       })
     )
     return
