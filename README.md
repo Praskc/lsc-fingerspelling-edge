@@ -138,16 +138,18 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 
 ## Features de la aplicación
 
-- **Traductor en tiempo real** — concatenación con cooldown de 800ms, soporte SPACE y DELETE
-- **Motor de gamificación** — 5 niveles de dificultad, banco local de 300 palabras en español (60 por nivel) sin dependencia externa; Datamuse API como fuente opcional de variedad adicional cuando hay conexión
-- **Modo aprendizaje** — grid del alfabeto ASL interactivo, la seña detectada se ilumina en tiempo real
-- **ROI adaptativo** — región de interés visual sincronizada con límites de detección, advertencia cuando la mano sale de zona
-- **PWA instalable** — funciona offline, carga instantánea, service worker con cache-first para modelo y assets
-- **Onboarding** — tutorial de primera visita, solo se muestra una vez (localStorage)
-- **Manejo de errores de cámara** — mensajes específicos por tipo (NotAllowedError, NotFoundError, NotReadableError) con botón de reintento
-- **Detección de luminosidad** — muestreo de 576 px cada ~3 s, aviso si el entorno está oscuro
-- **Pausa automática** — Page Visibility API pausa la inferencia cuando la pestaña está oculta
-- **Panel de debug** — confianza red, confianza efectiva, distancia a centroide, buffer de votación, top-3 clases, RAM heap, MP frame (ms) y FPS real
+| Feature | Descripción |
+|---------|-------------|
+| **Traductor en tiempo real** | Concatenación con cooldown de 800ms, soporte SPACE y DELETE |
+| **Motor de gamificación** | 5 niveles de dificultad, banco local de 300 palabras en español sin dependencia externa |
+| **Modo aprendizaje** | Grid del alfabeto interactivo, la seña detectada se ilumina en tiempo real |
+| **ROI adaptativo** | Región de interés sincronizada con límites de detección |
+| **PWA instalable** | Funciona offline, carga instantánea, service worker cache-first |
+| **Onboarding** | Tutorial de primera visita, solo se muestra una vez (localStorage) |
+| **Errores de cámara** | Mensajes por tipo (NotAllowedError, NotFoundError, NotReadableError) con reintento |
+| **Detección de luminosidad** | Muestreo de 576 px cada ~3 s, aviso si el entorno está oscuro |
+| **Pausa automática** | Page Visibility API pausa la inferencia cuando la pestaña está oculta |
+| **Panel de debug** | Confianza, distancia a centroide, buffer, top-3, RAM heap, MP frame y FPS |
 
 ## Estructura del proyecto
 
@@ -271,41 +273,13 @@ El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutabl
 ## Changelog
 
 ### v3 — refactor (actual)
-- Modularización completa de `src/` en `core/`, `engine/`, `game/`, `lib/` y `ui/`
-- Migración de `@mediapipe/hands` (CDN legacy) a `@mediapipe/tasks-vision@0.10.35` con HandLandmarker API
-- Fix de lateralidad: Tasks-Vision invierte el etiquetado respecto a la API anterior
-- CSP completa en todos los entornos (Vercel, Docker nginx)
-- Service worker `yoso-v6` con cache de `storage.googleapis.com` (hand_landmarker.task) y `skipWaiting`
-- Panel de debug extendido: MP frame (ms) y FPS real de cámara
-- Docker: `compose.yaml` movido a `docker/`
-- Skeleton shimmer reescrito con `transform: translateX` para composite layer GPU
+Modularización de `src/` en `core/`, `engine/`, `game/`, `lib/` y `ui/`. Migración a `@mediapipe/tasks-vision@0.10.35` con fix de lateralidad. CSP completa en Vercel y Docker. Service worker `yoso-v6` con cache de Google Storage. Panel de debug extendido con MP frame y FPS. `compose.yaml` movido a `docker/`.
 
 ### v2 — refactor
-- Migración completa a TypeScript con strict mode
-- PWA: manifest, service worker con cache-first, instalable y funcional offline
-- Onboarding de primera visita, empty state por tipo de error de cámara
-- Page Visibility API: pausa inferencia en pestaña oculta
-- Detección de luminosidad baja cada ~3 s
-- Buffer de votación ponderado con cooldown diferenciado por tipo de letra
-- Modo aprendizaje: grid ASL interactivo con resaltado en tiempo real
-- ROI CSS sincronizado con límites de detección reales
-- Panel de debug con RAM heap, top-3, buffer de votos, distancia a centroide, MP frame y FPS real
-- `vercel.json` con COOP/COEP headers para Vercel
-- Vite 6.4.2, onnxruntime-web 1.25.1 fijado, 0 vulnerabilidades
-- Fix XSS: `createElement` en vez de `innerHTML` para datos de API externa
-- Migración npm → pnpm
-- Resolución adaptativa de cámara para móviles (front-facing explícito)
-- Despliegue Docker: multi-stage build + nginx con COOP/COEP y caché diferenciada
-- Pipeline ML reorganizado en `ml/model/`
-- Diagramas SVG del alfabeto rediseñados: dedos orgánicos con bezier, perspectiva de observador correcta
-- Banco local de 300 palabras en español (60 por nivel) — juego funcional sin conexión
-- Filtro de anglicismos en Datamuse (TH, CK, WH, GH)
+Migración a TypeScript strict. PWA instalable y funcional offline. Gamificación con banco local de 300 palabras. Modo aprendizaje con grid interactivo. Buffer de votación ponderado. ROI adaptativo. Detección de luminosidad. Panel de debug. Deploy en Vercel y Docker.
 
 ### v1 — main (legacy)
-- Pipeline de 48 features con normalización anatómica
-- JavaScript vanilla, arquitectura monolítica
-- Filtro zona gris por clase con dist_ref P75
-- Dataset unificado ~360k muestras, 98.63% accuracy
+JavaScript vanilla. Pipeline de 48 features con normalización anatómica. Filtro zona gris con dist_ref P75. Dataset ~360k muestras, 98.63% accuracy.
 
 ## Roadmap
 
