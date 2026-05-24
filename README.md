@@ -8,7 +8,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-Web-FF6F00?style=flat-square&logo=onnx&logoColor=white)](https://onnxruntime.ai/)
-[![MediaPipe](https://img.shields.io/badge/MediaPipe-Hands-00897B?style=flat-square&logo=google&logoColor=white)](https://mediapipe.dev/)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-Tasks_Vision_0.10.35-00897B?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker)
 [![License](https://img.shields.io/badge/Licencia-GPL_2.0-blue?style=flat-square)](LICENSE)
 
 </div>
@@ -24,7 +24,7 @@ El sistema fue desarrollado con el propósito de reducir las barreras de comunic
 ## Pipeline completo
 
 ```
-Cámara → MediaPipe Hands → 48 features → FCNN ONNX → Buffer de votación → Letra confirmada
+Cámara → MediaPipe Tasks-Vision (hand_landmarker) → 21 landmarks → 48 features → FCNN ONNX → Buffer de votación → Letra confirmada
 ```
 
 ### Arquitectura del modelo
@@ -147,40 +147,52 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 - **Manejo de errores de cámara** — mensajes específicos por tipo (NotAllowedError, NotFoundError, NotReadableError) con botón de reintento
 - **Detección de luminosidad** — muestreo de 576 px cada ~3 s, aviso si el entorno está oscuro
 - **Pausa automática** — Page Visibility API pausa la inferencia cuando la pestaña está oculta
-- **Panel de debug** — confianza red, confianza efectiva, distancia a centroide, buffer de votación, top-3 clases, RAM heap
+- **Panel de debug** — confianza red, confianza efectiva, distancia a centroide, buffer de votación, top-3 clases, RAM heap, MP frame (ms) y FPS real
 
 ## Estructura del proyecto
 
 ```
 ├── src/
-│   ├── app.ts          # Orquestador — pipeline MediaPipe, ROI, visibilidad, luminosidad
-│   ├── inference.ts    # Motor de IA — preprocesado, softmax, filtros, buffer de votos
-│   ├── game.ts         # Motor de gamificación — palabras por niveles, banco local 300 palabras
-│   ├── ui.ts           # Capa DOM — HUD, toasts, onboarding, empty state, debug
-│   ├── types.ts        # Interfaces TypeScript
-│   ├── signs.ts        # Diagramas SVG orgánicos del alfabeto ASL (perspectiva observador)
-│   ├── styles.css      # UI fluid con CSS custom properties + container queries
-│   └── main.ts         # Entry point + registro del Service Worker
+│   ├── core/
+│   │   ├── app.ts          # Orquestador — pipeline Tasks-Vision, ROI, visibilidad, luminosidad
+│   │   └── main.ts         # Entry point + registro del Service Worker
+│   ├── engine/
+│   │   ├── inference.ts    # Motor de IA — preprocesado, softmax, filtros, buffer de votos
+│   │   └── types.ts        # Interfaces TypeScript del motor
+│   ├── game/
+│   │   └── game.ts         # Motor de gamificación — palabras por niveles, banco local 300 palabras
+│   ├── lib/
+│   │   └── signs.ts        # Diagramas SVG orgánicos del alfabeto (perspectiva observador)
+│   ├── ui/
+│   │   ├── hud.ts          # HUD de predicción y estado de mano
+│   │   ├── debug.ts        # Panel de debug — métricas, buffer, top-3
+│   │   ├── splash.ts       # Pantalla de carga
+│   │   ├── toast.ts        # Notificaciones no intrusivas
+│   │   ├── learn.ts        # Modo aprendizaje — grid del alfabeto
+│   │   ├── onboarding.ts   # Tutorial de primera visita
+│   │   └── index.ts        # Re-exporta RenderizadorUI
+│   └── styles.css          # UI fluid con CSS custom properties + container queries
 ├── public/
-│   ├── YOSO.onnx       # Modelo exportado (2.4 MB)
-│   ├── Centroides.json # Centroides + dist_ref P75 por clase
-│   ├── manifest.json   # PWA manifest
-│   ├── sw.js           # Service Worker — cache-first CDN, network-first navegación
-│   └── favicon.svg     # Ícono de la app
+│   ├── YOSO.onnx           # Modelo exportado (2.4 MB)
+│   ├── Centroides.json     # Centroides + dist_ref P75 por clase
+│   ├── manifest.json       # PWA manifest
+│   ├── sw.js               # Service Worker — cache-first CDN + Google Storage, network-first navegación
+│   ├── robots.txt          # Directivas para crawlers
+│   └── favicon.svg         # Ícono de la app
 ├── ml/
-│   ├── extract.py      # Extractor de landmarks desde imágenes del dataset
-│   ├── train.py        # Entrenamiento, limpieza IQR, exportación ONNX
-│   ├── features.py     # Feature engineering compartido
-│   ├── config.py       # Configuración del pipeline ML
-│   └── model/          # Salida del entrenamiento (ONNX + JSON) — no versionado
+│   ├── extract.py          # Extractor de landmarks desde imágenes del dataset
+│   ├── train.py            # Entrenamiento, limpieza IQR, exportación ONNX
+│   ├── features.py         # Feature engineering compartido
+│   ├── config.py           # Configuración del pipeline ML
+│   └── model/              # Salida del entrenamiento (ONNX + JSON) — no versionado
 ├── docker/
-│   ├── Dockerfile      # Multi-stage: node:22-alpine builder → nginx:1.27-alpine runtime
-│   └── nginx.conf      # Caché diferenciada por tipo, COOP/COEP, gzip
-├── compose.yaml        # Docker Compose — puerto 8080
-├── index.html          # HTML principal
-├── vite.config.ts      # Headers COOP/COEP para SharedArrayBuffer (WASM threads) en dev/preview
-├── vercel.json         # Headers COOP/COEP para producción en Vercel
-└── tsconfig.json       # TypeScript strict mode
+│   ├── Dockerfile          # Multi-stage: node:22-alpine builder → nginx:1.27-alpine runtime
+│   ├── compose.yaml        # Docker Compose — puerto 8080
+│   └── nginx.conf          # Caché diferenciada, COOP/COEP, CSP completa, gzip
+├── index.html              # HTML principal
+├── vite.config.ts          # Headers COOP/COEP para SharedArrayBuffer (WASM threads) en dev/preview
+├── vercel.json             # Headers de seguridad completos (COOP/COEP/CSP) para Vercel
+└── tsconfig.json           # TypeScript strict mode
 ```
 
 ## Instalación y uso
@@ -241,7 +253,7 @@ El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutabl
 
 ## Notas técnicas
 
-**Lateralidad MediaPipe** — MediaPipe etiqueta desde perspectiva de cámara (espejo). `'Left'` en MediaPipe = mano derecha del usuario. El flip de eje X se aplica cuando `handedness.label === 'Right'`
+**Lateralidad MediaPipe Tasks-Vision** — A diferencia de la API legacy, Tasks-Vision 0.10.35 etiqueta la mano derecha física como `'Right'`. El flip de eje X se aplica cuando `handedness.label === 'Left'` (mano izquierda física vista en espejo)
 
 **M y N** — son las clases con mayor varianza intra-clase por oclusión de dedos superpuestos. Sus dist_ref son 5-6× más altas que el resto
 
@@ -254,11 +266,21 @@ El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutabl
 | Rama | Descripción |
 |------|-------------|
 | `main` | Legacy — JavaScript vanilla, arquitectura original v1 |
-| `refactor` | Actual — TypeScript strict, PWA, UI rediseñada, gamificación, Vercel-ready |
+| `refactor` | Actual — TypeScript strict, arquitectura modular, MediaPipe Tasks-Vision, PWA, CSP completa |
 
 ## Changelog
 
-### v2 — refactor (actual)
+### v3 — refactor (actual)
+- Modularización completa de `src/` en `core/`, `engine/`, `game/`, `lib/` y `ui/`
+- Migración de `@mediapipe/hands` (CDN legacy) a `@mediapipe/tasks-vision@0.10.35` con HandLandmarker API
+- Fix de lateralidad: Tasks-Vision invierte el etiquetado respecto a la API anterior
+- CSP completa en todos los entornos (Vercel, Docker nginx)
+- Service worker `yoso-v6` con cache de `storage.googleapis.com` (hand_landmarker.task) y `skipWaiting`
+- Panel de debug extendido: MP frame (ms) y FPS real de cámara
+- Docker: `compose.yaml` movido a `docker/`
+- Skeleton shimmer reescrito con `transform: translateX` para composite layer GPU
+
+### v2 — refactor
 - Migración completa a TypeScript con strict mode
 - PWA: manifest, service worker con cache-first, instalable y funcional offline
 - Onboarding de primera visita, empty state por tipo de error de cámara
@@ -267,7 +289,7 @@ El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutabl
 - Buffer de votación ponderado con cooldown diferenciado por tipo de letra
 - Modo aprendizaje: grid ASL interactivo con resaltado en tiempo real
 - ROI CSS sincronizado con límites de detección reales
-- Panel de debug con RAM heap, top-3, buffer de votos, distancia a centroide
+- Panel de debug con RAM heap, top-3, buffer de votos, distancia a centroide, MP frame y FPS real
 - `vercel.json` con COOP/COEP headers para Vercel
 - Vite 6.4.2, onnxruntime-web 1.25.1 fijado, 0 vulnerabilidades
 - Fix XSS: `createElement` en vez de `innerHTML` para datos de API externa
