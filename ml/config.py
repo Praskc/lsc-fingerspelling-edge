@@ -40,7 +40,7 @@ INDEX_TO_LABEL: dict[int, str] = {v: k for k, v in LABEL_TO_INDEX.items()}
 CSV_FILES    = [os.path.join(_ROOT, 'lsc_master.csv'), os.path.join(_ROOT, 'hand_landmarks.csv')]
 MAX_EPOCHS   = 100
 PATIENCE     = 15
-BATCH_SIZE   = 1024
+BATCH_SIZE   = 256
 LR           = 1e-3
 WEIGHT_DECAY = 0.01
 

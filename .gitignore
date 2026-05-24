@@ -28,6 +28,7 @@ asl_dataset
 *.sln
 *.sw?
 *.claude
+*CLAUDE.md
 *.bak
 *.csv
 
@@ -41,3 +42,5 @@ hand_landmarks.csv
 !model/.gitkeep
 
 .vercel
+
+.superpowers/
