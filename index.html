@@ -4,22 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YOU ONLY SIGN ONCE --- BETA EDITION </title>
-  <meta name="theme-color" content="#38BDF8">
+  <meta name="description" content="YOSO — Reconocimiento del alfabeto dactilológico LSC en tiempo real, 100% en el navegador. Sin servidor ni conexión requerida.">
+  <meta name="theme-color" content="#38BDF8"><!-- accent azul cielo -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="/manifest.json">
+  <!-- Preloads de assets críticos — empiezan a descargar antes de que el JS los pida -->
   <link rel="preload" href="/YOSO.onnx" as="fetch" crossorigin="anonymous">
   <link rel="preload" href="/Centroides.json" as="fetch" crossorigin="anonymous">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Preconnects — amortiza DNS+TCP+TLS antes de las primeras peticiones CDN -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link rel="preconnect" href="https://storage.googleapis.com" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" crossorigin="anonymous">
   <link rel="stylesheet" href="/src/styles.css">
-  <!-- MediaPipe: sin empaquetador oficial estable para Vite — CDN es la práctica recomendada -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -144,7 +147,7 @@
             <svg class="hud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <span class="hud-label">DEBUG</span>
             <label class="toggle-switch">
-              <input type="checkbox" id="debug-checkbox">
+              <input type="checkbox" id="debug-checkbox" aria-label="Activar panel de depuración">
               <span class="toggle-track"><span class="toggle-thumb"></span></span>
             </label>
           </div>
@@ -156,12 +159,14 @@
         <div class="debug-grid">
           <div class="dr"><span class="dl">Red bruta</span><div class="dbw"><div id="db-bar-red" class="db db-red"></div></div><span id="db-red" class="dv">--</span></div>
           <div class="dr"><span class="dl">Conf efectiva</span><div class="dbw"><div id="db-bar-eff" class="db db-eff"></div></div><span id="db-eff" class="dv">--</span></div>
-          <div class="dr"><span class="dl">Umbral</span><div class="dbw"><div class="db db-thr" style="width:75%"></div></div><span class="dv">75%</span></div>
+          <div class="dr"><span class="dl">Umbral</span><div class="dbw"><div class="db db-thr" style="width:82%"></div></div><span class="dv">82%</span></div>
           <div class="dr"><span class="dl">Distancia</span><div class="dbw"><div id="db-bar-dist" class="db db-dist"></div></div><span id="db-dist" class="dv">--</span></div>
           <div class="dr"><span class="dl">Dist ref</span><div class="dbw"><div class="db db-ref" style="width:50%"></div></div><span id="db-distref" class="dv">--</span></div>
           <div class="dr"><span class="dl">Buffer</span><div id="db-buffer" class="debug-buffer"></div><span id="db-votes" class="dv">--</span></div>
           <div class="dr"><span class="dl">Top-3</span><span id="db-top3" class="debug-top3">--</span></div>
           <div class="dr"><span class="dl">RAM heap</span><div class="dbw"><div id="db-bar-mem" class="db db-mem"></div></div><span id="db-mem" class="dv">-- MB</span></div>
+          <div class="dr"><span class="dl">MP frame</span><div class="dbw"><div id="db-bar-mp" class="db db-mp"></div></div><span id="db-mp" class="dv">-- ms</span></div>
+          <div class="dr"><span class="dl">FPS real</span><span id="db-fps" class="dv">--</span></div>
         </div>
       </div>
 
@@ -219,7 +224,6 @@
         </div>
       </div>
 
-      <div id="status_text" style="display:none"><span class="status-label"></span></div>
 
     </div>
 
@@ -234,10 +238,6 @@
       </a>
     </span>
   </footer>
-
-  <input type="checkbox" id="toggle-entrenamiento" style="display:none">
-  <span id="label-traductor" style="display:none"></span>
-  <span id="label-entrenamiento" style="display:none"></span>
 
   <!-- Onboarding — primera visita -->
   <div id="onboarding" class="onboarding" role="dialog" aria-modal="true" aria-labelledby="onb-title" hidden>
@@ -281,6 +281,6 @@
   <!-- Contenedor de toasts no intrusivos -->
   <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="false"></div>
 
-  <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="/src/core/main.ts"></script>
 </body>
 </html>
