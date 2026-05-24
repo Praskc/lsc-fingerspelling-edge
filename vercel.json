@@ -7,7 +7,11 @@
       "source": "/(.*)",
       "headers": [
         { "key": "Cross-Origin-Opener-Policy",  "value": "same-origin" },
-        { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+        { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
+        { "key": "X-Content-Type-Options",       "value": "nosniff" },
+        { "key": "X-Frame-Options",              "value": "DENY" },
+        { "key": "Referrer-Policy",              "value": "strict-origin-when-cross-origin" },
+        { "key": "Content-Security-Policy",      "value": "default-src 'none'; script-src 'self' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://storage.googleapis.com https://api.datamuse.com; worker-src blob:; manifest-src 'self'; base-uri 'self'; frame-ancestors 'none'" }
       ]
     }
   ]
