@@ -31,6 +31,12 @@ export class MotorInferencia {
   private readonly bufCoords   = new Float32Array(42)
   private readonly bufFeatures = new Float32Array(48)
   private          bufSoftmax  = new Float32Array(0)   // se dimensiona en primer uso
+  private readonly _bufLetras: string[] = Array.from({ length: TAMANO_BUFFER }, () => '')
+  private readonly _top3Buf: ItemTop[]  = [
+    { letra: '', prob: 0 },
+    { letra: '', prob: 0 },
+    { letra: '', prob: 0 }
+  ]
 
   // Estado del buffer de votación ponderada
   private bufferVotos: Array<{ letra: string; peso: number }> = []
@@ -88,10 +94,20 @@ export class MotorInferencia {
       let letraDetectada = confianzaEfectiva >= UMBRAL_CONFIANZA ? letra : '-'
       if ((letraDetectada === ' ' || letraDetectada === BORRAR) && jitter > 0.02) letraDetectada = '-'
 
-      const top3: ItemTop[] = Array.from(probs)
-        .map((p, i) => ({ letra: ALFABETO[i], prob: p }))
-        .sort((a, b) => b.prob - a.prob)
-        .slice(0, 3)
+      // top-3 por partial sort O(n) sin alloc — buffers preasignados
+      {
+        let i0 = 0, i1 = 0, i2 = 0
+        let p0 = -Infinity, p1 = -Infinity, p2 = -Infinity
+        for (let i = 0; i < probs.length; i++) {
+          const p = probs[i]
+          if      (p > p0) { p2 = p1; i2 = i1; p1 = p0; i1 = i0; p0 = p; i0 = i }
+          else if (p > p1) { p2 = p1; i2 = i1; p1 = p; i1 = i }
+          else if (p > p2) { p2 = p; i2 = i }
+        }
+        this._top3Buf[0].letra = ALFABETO[i0]; this._top3Buf[0].prob = p0
+        this._top3Buf[1].letra = ALFABETO[i1]; this._top3Buf[1].prob = p1
+        this._top3Buf[2].letra = ALFABETO[i2]; this._top3Buf[2].prob = p2
+      }
 
       // Actualizar buffer antes de callbacks → bufferProgreso refleja el frame actual
       this.bufferVotos.push({ letra: letraDetectada, peso: letraDetectada === '-' ? 0 : confianzaEfectiva })
@@ -109,11 +125,14 @@ export class MotorInferencia {
         : 0
 
       this.cb.alDetectarLetra(letraDetectada, confianzaEfectiva, latInferencia, latProcesamiento, esCamaraIzquierda)
+      for (let i = 0; i < this.bufferVotos.length; i++) this._bufLetras[i] = this.bufferVotos[i].letra
+      for (let i = this.bufferVotos.length; i < TAMANO_BUFFER; i++) this._bufLetras[i] = ''
+
       this.cb.alActualizarDebug({
         probRed: probPico, confEfectiva: confianzaEfectiva,
         distancia, distRef,
-        bufferActual: this.bufferVotos.map(v => v.letra),
-        topN:         top3,
+        bufferActual: this._bufLetras,
+        topN:         this._top3Buf,
         bufferProgreso
       } satisfies CargaDebug)
 
@@ -150,7 +169,7 @@ export class MotorInferencia {
 
     for (let i = 0; i < 21; i++) {
       let dx = puntos[i].x - baseX
-      if (!esCamaraIzquierda) dx *= -1
+      if (esCamaraIzquierda) dx *= -1
       this.bufCoords[i * 2]     = dx
       this.bufCoords[i * 2 + 1] = puntos[i].y - baseY
     }
@@ -196,8 +215,8 @@ export class MotorInferencia {
   private _juezUR(letra: string, puntos: Punto[], esCamaraIzquierda: boolean): string {
     if (letra !== 'U' && letra !== 'R') return letra
     const cruzados = esCamaraIzquierda
-      ? puntos[8].x < puntos[12].x
-      : puntos[8].x > puntos[12].x
+      ? puntos[8].x > puntos[12].x
+      : puntos[8].x < puntos[12].x
     return cruzados ? 'R' : 'U'
   }
 
@@ -227,4 +246,3 @@ export class MotorInferencia {
     return { confianzaEfectiva, distancia, distRef }
   }
 }
-

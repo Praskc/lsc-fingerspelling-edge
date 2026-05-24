@@ -9,12 +9,6 @@ export interface Lateralidad {
   score: number
 }
 
-export interface ResultadoManos {
-  image:               HTMLVideoElement | HTMLCanvasElement
-  multiHandLandmarks:  Punto[][]
-  multiHandedness:     Lateralidad[]
-}
-
 export interface ItemTop {
   letra: string
   prob:  number

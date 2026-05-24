@@ -3,7 +3,7 @@ import { YOSOApp } from './app'
 
 document.addEventListener('DOMContentLoaded', () => {
   const app = new YOSOApp()
-  app.iniciar()
+  void app.iniciar()
 })
 
 // Registro del Service Worker para capacidades PWA offline-first

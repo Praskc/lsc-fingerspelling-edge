@@ -1,5 +1,5 @@
-import { signURI }  from './signs'
-import { BORRAR }   from './inference'
+import { signURI }  from '../lib/signs'
+import { BORRAR }   from '../engine/inference'
 
 const NIVELES = [
   { nivel: 1, minLen: 3, maxLen: 4, req: 3,  label: 'NOVATO'   },
@@ -10,7 +10,7 @@ const NIVELES = [
 ]
 
 // Banco de palabras en español sin tildes ni Ñ (A-Z). Fallback cuando Datamuse
-// no está disponible; también garantiza que jamás aparezca una palabra inglesa.
+// no está disponible, también garantiza que jamás aparezca una palabra inglesa.
 const BANCO: Record<number, string[]> = {
   1: [
     'SOL','MAR','PAZ','LUZ','RED','PAN','SAL','FIN','GAS','LEY',

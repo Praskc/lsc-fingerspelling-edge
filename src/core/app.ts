@@ -1,24 +1,13 @@
 // ============================================================================
 // APP.TS — Orquestador YOSO
 // ============================================================================
-import * as ort                        from 'onnxruntime-web'
-import { MotorInferencia, BORRAR }     from './inference'
-import { GameManager }                 from './game'
-import { RenderizadorUI }              from './ui'
-import type { ResultadoManos, Punto }  from './types'
-
-// Declaraciones MediaPipe — sin empaquetador oficial para Vite, se carga por CDN
-declare const Hands:            new (opts: object) => ManosMediaPipe
-declare const Camera:           new (el: HTMLVideoElement, opts: object) => { start: () => void }
-declare const drawConnectors:   (ctx: CanvasRenderingContext2D, pts: Punto[], conns: unknown, estilo: object) => void
-declare const drawLandmarks:    (ctx: CanvasRenderingContext2D, pts: Punto[], estilo: object) => void
-declare const HAND_CONNECTIONS: unknown
-
-interface ManosMediaPipe {
-  setOptions: (opts: object) => void
-  onResults:  (cb: (r: ResultadoManos) => void) => void
-  send:       (opts: { image: HTMLVideoElement }) => Promise<void>
-}
+import * as ort                                          from 'onnxruntime-web'
+import { HandLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision'
+import type { HandLandmarkerResult }                     from '@mediapipe/tasks-vision'
+import { MotorInferencia, BORRAR }                       from '../engine/inference'
+import { GameManager }                                   from '../game/game'
+import { RenderizadorUI }                                from '../ui'
+import type { Lateralidad, Punto }                       from '../engine/types'
 
 // ── Límites de la región de interés (coordenadas normalizadas) ────────────────
 const LIMITE_SUPERIOR  = 0.10
@@ -36,6 +25,7 @@ export class YOSOApp {
   private readonly video:  HTMLVideoElement
   private readonly canvas: HTMLCanvasElement
   private readonly ctx:    CanvasRenderingContext2D
+  private _drawingUtils:   DrawingUtils | null = null
 
   private modo: 'traductor' | 'entrenamiento' | 'aprendizaje' = 'traductor'
   private anchoCanvas  = 0
@@ -51,6 +41,11 @@ export class YOSOApp {
   private readonly _ctxLuz:    CanvasRenderingContext2D
   private _frameCount    = 0
   private _toastLuzVivo  = false
+
+  // ── Circular buffer para FPS — sin push/shift por frame ──────────────────
+  private readonly _fpsBuf = new Float64Array(60)
+  private _fpsHead = 0
+  private _fpsFill = 0
 
   constructor() {
     this.motor  = new MotorInferencia()
@@ -81,7 +76,7 @@ export class YOSOApp {
 
       const [sesion, centroidesRaw] = await Promise.all([
         ort.InferenceSession.create('./YOSO.onnx', {
-          executionProviders:     ['webgl', 'wasm'],
+          executionProviders:     ['wasm'],
           graphOptimizationLevel: 'all',
           enableCpuMemArena:      true,
           intraOpNumThreads:      2
@@ -123,16 +118,14 @@ export class YOSOApp {
 
   // ── Inicialización de cámara (reiniciable vía botón de reintento) ─────────────
   private async _iniciarCamara(): Promise<void> {
-    // Resolución y cámara adaptativa según dispositivo
     const esMobil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-
-    // En móvil pedir cámara frontal explícitamente como videollamada
     const constraints: MediaStreamConstraints = esMobil
       ? { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
-      : { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }
+      : { video: { width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
 
+    let stream: MediaStream
     try {
-      await navigator.mediaDevices.getUserMedia(constraints)
+      stream = await navigator.mediaDevices.getUserMedia(constraints)
     } catch (err) {
       const domErr = err as DOMException
       if (domErr.name === 'NotAllowedError' || domErr.name === 'PermissionDeniedError') {
@@ -145,32 +138,58 @@ export class YOSOApp {
 
     this.ui.ocultarEstadoVacio()
 
-    const manos = new Hands({
-      locateFile: (f: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
-    })
-    manos.setOptions({
-      maxNumHands:            1,
-      modelComplexity:        0,
-      minDetectionConfidence: 0.80,  // subido de 0.7 — descarta detecciones dudosas
-      minTrackingConfidence:  0.70   // subido de 0.5 — exige tracking más estable
-    })
-
-    let skeletonOculto = false
-    manos.onResults((r) => {
-      if (!skeletonOculto) { skeletonOculto = true; this.ui.ocultarSkeleton() }
-      this._alRecibirResultados(r)
-    })
-
-    const camW = esMobil ? 640  : 1280
-    const camH = esMobil ? 360  : 720
-
-    new Camera(this.video, {
-      onFrame: async () => {
-        if (this._pausado) return
-        await manos.send({ image: this.video })
+    const vision = await FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
+    )
+    const handLandmarker = await HandLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+        delegate: 'GPU'
       },
-      width: camW, height: camH
-    }).start()
+      runningMode: 'VIDEO',
+      numHands: 1,
+      minHandDetectionConfidence: 0.80,
+      minHandPresenceConfidence:  0.70,
+      minTrackingConfidence:      0.70
+    })
+
+    this._drawingUtils = new DrawingUtils(this.ctx)
+
+    this.video.srcObject = stream
+    await new Promise<void>(resolve => { this.video.onloadedmetadata = () => resolve() })
+    await this.video.play()
+
+    let skeletonOculto  = false
+    let ultimoVideoTime = -1
+
+    const loop = () => {
+      requestAnimationFrame(loop)
+      if (this._pausado || this.video.readyState < 2) return
+      if (this.video.currentTime === ultimoVideoTime) return  // frame ya procesado
+      ultimoVideoTime = this.video.currentTime
+
+      const ahora = performance.now()
+
+      // FPS: circular buffer preasignado — sin push/shift
+      const oldest = this._fpsFill >= 2
+        ? this._fpsBuf[this._fpsFill < 60 ? 0 : this._fpsHead]
+        : 0
+      this._fpsBuf[this._fpsHead] = ahora
+      this._fpsHead = (this._fpsHead + 1) % 60
+      if (this._fpsFill < 60) this._fpsFill++
+      const fps = this._fpsFill >= 2
+        ? (this._fpsFill - 1) / ((ahora - oldest) / 1000)
+        : 0
+
+      const t0       = performance.now()
+      const resultado = handLandmarker.detectForVideo(this.video, ahora)
+      const mpMs     = performance.now() - t0
+
+      if (!skeletonOculto) { skeletonOculto = true; this.ui.ocultarSkeleton() }
+      this._alRecibirResultados(resultado)
+      this.ui.actualizarPerfFrame(mpMs, fps)
+    }
+    requestAnimationFrame(loop)
   }
 
   // ── Page Visibility API — pausa térmica ───────────────────────────────────────
@@ -245,18 +264,15 @@ export class YOSOApp {
     this.ui.agregarLetra(letra, letra === BORRAR)
   }
 
-  // ── Pipeline MediaPipe ────────────────────────────────────────────────────────
-  private _alRecibirResultados(resultado: ResultadoManos): void {
-    if (resultado.image) {
-      const vid = resultado.image as HTMLVideoElement
-      const ancho = vid.videoWidth  || (vid as unknown as HTMLCanvasElement).width
-      const alto  = vid.videoHeight || (vid as unknown as HTMLCanvasElement).height
-      if (ancho !== this.anchoCanvas || alto !== this.altoCanvas) {
-        this.canvas.width  = ancho
-        this.canvas.height = alto
-        this.anchoCanvas   = ancho
-        this.altoCanvas    = alto
-      }
+  // ── Pipeline HandLandmarker ───────────────────────────────────────────────────
+  private _alRecibirResultados(resultado: HandLandmarkerResult): void {
+    const ancho = this.video.videoWidth
+    const alto  = this.video.videoHeight
+    if (ancho !== this.anchoCanvas || alto !== this.altoCanvas) {
+      this.canvas.width  = ancho
+      this.canvas.height = alto
+      this.anchoCanvas   = ancho
+      this.altoCanvas    = alto
     }
 
     // Verificar luminosidad cada ~3 segundos (90 frames a 30 fps)
@@ -267,18 +283,23 @@ export class YOSOApp {
     this.ctx.clearRect(0, 0, ac, al)
     this.ctx.translate(ac, 0)
     this.ctx.scale(-1, 1)
-    this.ctx.drawImage(resultado.image as CanvasImageSource, 0, 0, ac, al)
+    this.ctx.drawImage(this.video, 0, 0, ac, al)
 
-    if (resultado.multiHandLandmarks?.length > 0) {
-      const puntos      = resultado.multiHandLandmarks[0]
-      const lateralidad = resultado.multiHandedness[0]
-
-      drawConnectors(this.ctx, puntos, HAND_CONNECTIONS,
-        { color: 'rgba(56,189,248,0.80)', lineWidth: 2 })
-      drawLandmarks(this.ctx, puntos,
-        { color: '#38BDF8', lineWidth: 0.5, radius: 3 })
+    if (resultado.landmarks.length > 0) {
+      const rawLandmarks = resultado.landmarks[0]
+      const puntos        = rawLandmarks as unknown as Punto[]
+      const lateralidad: Lateralidad = {
+        label: resultado.handedness[0][0].categoryName as 'Left' | 'Right',
+        score: resultado.handedness[0][0].score
+      }
 
       this.ctx.setTransform(1, 0, 0, 1, 0, 0)
+
+      const displayLandmarks = rawLandmarks.map(lm => ({ x: 1 - lm.x, y: lm.y, z: lm.z, visibility: lm.visibility }))
+      this._drawingUtils!.drawConnectors(displayLandmarks, HandLandmarker.HAND_CONNECTIONS,
+        { color: 'rgba(56,189,248,0.80)', lineWidth: 2 })
+      this._drawingUtils!.drawLandmarks(displayLandmarks,
+        { color: '#38BDF8', lineWidth: 0.5, radius: 3 })
 
       let minX = 1, minY = 1, maxX = 0
       for (const pt of puntos) {
