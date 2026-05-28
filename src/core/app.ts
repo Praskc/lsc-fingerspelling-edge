@@ -74,12 +74,13 @@ export class YOSOApp {
     try {
       this.ui.mensajeSplash('Cargando modelo…')
 
-      // WebGPU si está disponible; ORT cae a WASM solo si el provider falla.
-      // intraOpNumThreads tope 2: respeta CPUs single-core sin contender.
+      // Solo WASM: el modelo (~455K params) es demasiado pequeño para que
+      // WebGPU amortice su overhead de dispatch+sync+transferencia por frame.
+      // WASM SIMD con 2 hilos gana ~5-15ms vs WebGPU en este FCNN.
       const hilos = Math.min(2, navigator.hardwareConcurrency ?? 2)
       const [sesion, centroidesRaw] = await Promise.all([
         ort.InferenceSession.create('./YOSO.onnx', {
-          executionProviders:     ['webgpu', 'wasm'],
+          executionProviders:     ['wasm'],
           graphOptimizationLevel: 'all',
           enableCpuMemArena:      true,
           intraOpNumThreads:      hilos
