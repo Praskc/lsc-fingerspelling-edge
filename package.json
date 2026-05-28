@@ -1,7 +1,7 @@
 {
   "name": "yoso",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
   "packageManager": "pnpm@11.1.2",
   "scripts": {
@@ -19,7 +19,8 @@
   },
   "pnpm": {
     "overrides": {
-      "esbuild": "^0.25.0"
+      "esbuild": "^0.25.0",
+      "protobufjs": ">=7.5.8"
     }
   }
 }
