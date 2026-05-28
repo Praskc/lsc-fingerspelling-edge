@@ -1,12 +1,10 @@
 // ============================================================================
 // SW.JS — Service Worker YOSO (offline-first, cache-first para assets)
 // ============================================================================
-const CACHE = 'yoso-v7'
+const CACHE = 'yoso-v6'
 
 const PRECACHE = [
   '/',
-  '/index.html',
-  '/manifest.json',
   '/YOSO.onnx',
   '/Centroides.json',
   '/favicon.svg',
