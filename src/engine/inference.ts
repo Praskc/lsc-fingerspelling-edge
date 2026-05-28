@@ -40,6 +40,10 @@ export class MotorInferencia {
     { letra: '', prob: 0 }
   ]
 
+  // Tensor + inputFeed reutilizados — bufFeatures es backing, mutar bufFeatures muta el tensor
+  private _tensor:    ort.Tensor | null = null
+  private _inputFeed: Record<string, ort.Tensor> = {}
+
   // Estado del buffer de votación ponderada
   private bufferVotos: Array<{ letra: string; peso: number }> = []
   private readonly _pesoPorLetra = new Map<string, number>()
@@ -57,6 +61,9 @@ export class MotorInferencia {
     // Cacheados — evita lecturas redundantes por frame
     this._inputName  = this.sesion.inputNames[0]
     this._outputName = this.sesion.outputNames[0]
+    // Tensor preasignado — backing = bufFeatures. ORT lee tensor.data en cada run().
+    this._tensor = new ort.Tensor('float32', this.bufFeatures, [1, 48])
+    this._inputFeed[this._inputName] = this._tensor
   }
 
   // forzar=false (default): solo limpia buffer — ultimaLetra y ultimoTiempoEscritura
@@ -81,11 +88,11 @@ export class MotorInferencia {
       const entrada  = this._preprocesar(puntos, esCamaraIzquierda)
       if (entrada === null) return  // mano ocluida o dp ≈ 0 — descartar frame
 
-      // Sin .slice(): _procesando garantiza que bufFeatures no se muta durante session.run
-      const tensor = new ort.Tensor('float32', entrada, [1, 48])
-
+      // Tensor + feed reutilizados. _procesando garantiza no-mutation durante run.
+      // bufFeatures (== entrada) ya está poblado por _preprocesar y es el backing del tensor.
+      void entrada
       const t0Inf         = performance.now()
-      const salida        = await this.sesion.run({ [this._inputName]: tensor })
+      const salida        = await this.sesion.run(this._inputFeed)
       const latInferencia = performance.now() - t0Inf
 
       const datos = salida[this._outputName].data as Float32Array
