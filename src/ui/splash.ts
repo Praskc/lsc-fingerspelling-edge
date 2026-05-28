@@ -29,7 +29,7 @@ export class Splash {
   }
 
   mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void, bloqueado = false): void {
-    const esMobil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    const esMobil = matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0
 
     const mensajePermiso: [string, string] = bloqueado ? [
       'Cámara bloqueada',

@@ -112,12 +112,22 @@ export class GameManager {
   private async _cargarPool(): Promise<void> {
     const { minLen, maxLen } = NIVELES[this.nivelIdx]
     try {
-      const url = `https://api.datamuse.com/words?sp=${'?'.repeat(minLen)}&v=es&max=400`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data: { word: string }[] = await res.json()
+      // Una petición por cada longitud del rango [minLen, maxLen] — datamuse
+      // sp= solo acepta patrones de longitud exacta, así que pedir uno solo
+      // pierde la mayoría del rango.
+      const ctrl = new AbortController()
+      const timer = window.setTimeout(() => ctrl.abort(), 3000)
+      const longitudes: number[] = []
+      for (let n = minLen; n <= maxLen; n++) longitudes.push(n)
 
-      const filtradas = data
+      const respuestas = await Promise.all(longitudes.map(n =>
+        fetch(`https://api.datamuse.com/words?sp=${'?'.repeat(n)}&v=es&max=200`, { signal: ctrl.signal })
+          .then(r => r.ok ? r.json() as Promise<{ word: string }[]> : [])
+          .catch(() => [] as { word: string }[])
+      ))
+      window.clearTimeout(timer)
+
+      const filtradas = respuestas.flat()
         .map(d => d.word.toUpperCase())
         .filter(w =>
           w.length >= minLen &&
