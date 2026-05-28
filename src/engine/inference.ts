@@ -22,6 +22,9 @@ const COOLDOWN_COMANDO_MS    = 400
 // Suma mínima de pesos para confirmar — más exigente
 const PESO_MINIMO_VOTOS      = VOTOS_NECESARIOS * UMBRAL_CONFIANZA  // 7 × 0.82 = 5.74
 const PUNTAS                 = [4, 8, 12, 16, 20] as const
+const IDX_DESCARTE           = -1
+const IDX_ESPACIO            = ALFABETO.indexOf(' ')
+const IDX_BORRAR             = ALFABETO.indexOf(BORRAR)
 
 export class MotorInferencia {
   private sesion:     ort.InferenceSession | null = null
@@ -47,9 +50,13 @@ export class MotorInferencia {
   // Centroides indexados por posición en ALFABETO — evita string ops por frame
   private _centroidesPorIndice: (Centroide | null)[] = []
 
-  // Estado del buffer de votación ponderada
-  private bufferVotos: Array<{ letra: string; peso: number }> = []
-  private readonly _pesoPorLetra = new Map<string, number>()
+  // Buffer circular de votos — cero allocs por frame
+  private readonly _votosLetras = new Int8Array(TAMANO_BUFFER)   // índice en ALFABETO; -1 = descarte
+  private readonly _votosPesos  = new Float32Array(TAMANO_BUFFER)
+  private _votosHead   = 0
+  private _votosLleno  = false
+  // Acumulador de pesos por letra — indexado por posición en ALFABETO
+  private readonly _pesoPorLetra = new Float32Array(ALFABETO.length)
   private ultimaLetra:           string = ''
   private ultimoTiempoEscritura: number = 0
   private _procesando = false
@@ -72,14 +79,22 @@ export class MotorInferencia {
       if (!this.centroides || letra === ' ' || letra === BORRAR) return null
       return this.centroides[letra.toLowerCase()] ?? null
     })
+    // Buffer de votos vacío
+    this._votosLetras.fill(IDX_DESCARTE)
+    this._votosPesos.fill(0)
+    this._votosHead  = 0
+    this._votosLleno = false
   }
 
   // forzar=false (default): solo limpia buffer — ultimaLetra y ultimoTiempoEscritura
   // se preservan para que el cooldown sobreviva parpadeos del detector.
   // forzar=true: reset completo (cambio de modo, tab oculto).
   public reiniciar(forzar = false): void {
-    this.bufferVotos = []
-    this._procesando = false
+    this._votosLetras.fill(IDX_DESCARTE)
+    this._votosPesos.fill(0)
+    this._votosHead   = 0
+    this._votosLleno  = false
+    this._procesando  = false
     if (forzar) {
       this.ultimaLetra           = ''
       this.ultimoTiempoEscritura = 0
@@ -132,25 +147,42 @@ export class MotorInferencia {
         this._top3Buf[2].letra = ALFABETO[i2]; this._top3Buf[2].prob = p2
       }
 
-      // Actualizar buffer antes de callbacks → bufferProgreso refleja el frame actual
-      this.bufferVotos.push({ letra: letraDetectada, peso: letraDetectada === '-' ? 0 : confianzaEfectiva })
-      if (this.bufferVotos.length > TAMANO_BUFFER) this.bufferVotos.shift()
+      // Índice de la letra detectada en este frame (-1 si descarte)
+      const idxDetectada  = letraDetectada === '-' ? IDX_DESCARTE : ALFABETO.indexOf(letraDetectada)
+      const pesoDetectado = letraDetectada === '-' ? 0 : confianzaEfectiva
 
-      this._pesoPorLetra.clear()
-      let candidato = '', pesoCandidato = 0
-      for (const { letra: l, peso } of this.bufferVotos) {
-        if (l === '-') continue
-        const acumulado = (this._pesoPorLetra.get(l) ?? 0) + peso
-        this._pesoPorLetra.set(l, acumulado)
-        if (acumulado > pesoCandidato) { pesoCandidato = acumulado; candidato = l }
+      // Escritura O(1) en buffer circular
+      this._votosLetras[this._votosHead] = idxDetectada
+      this._votosPesos[this._votosHead]  = pesoDetectado
+      this._votosHead = (this._votosHead + 1) % TAMANO_BUFFER
+      if (this._votosHead === 0) this._votosLleno = true
+
+      // Cero el acumulador de pesos (28 floats — más rápido que Map.clear())
+      this._pesoPorLetra.fill(0)
+      let idxCandidato = IDX_DESCARTE, pesoCandidato = 0
+      const limite = this._votosLleno ? TAMANO_BUFFER : this._votosHead
+      for (let k = 0; k < limite; k++) {
+        const idxL = this._votosLetras[k]
+        if (idxL === IDX_DESCARTE) continue
+        const acumulado = this._pesoPorLetra[idxL] + this._votosPesos[k]
+        this._pesoPorLetra[idxL] = acumulado
+        if (acumulado > pesoCandidato) { pesoCandidato = acumulado; idxCandidato = idxL }
       }
-      const bufferProgreso = this.bufferVotos.length >= TAMANO_BUFFER
+      const bufferLleno    = this._votosLleno
+      const bufferProgreso = bufferLleno
         ? Math.min(pesoCandidato / PESO_MINIMO_VOTOS, 1.0)
         : 0
 
       this.cb.alDetectarLetra(letraDetectada, confianzaEfectiva, latInferencia, latProcesamiento, esCamaraIzquierda)
-      for (let i = 0; i < this.bufferVotos.length; i++) this._bufLetras[i] = this.bufferVotos[i].letra
-      for (let i = this.bufferVotos.length; i < TAMANO_BUFFER; i++) this._bufLetras[i] = ''
+
+      // Proyectar índices → strings sólo para el callback de debug.
+      // Orden cronológico desde head (más antiguo cuando lleno) hasta head-1 (más reciente).
+      for (let i = 0; i < TAMANO_BUFFER; i++) {
+        if (!bufferLleno && i >= this._votosHead) { this._bufLetras[i] = ''; continue }
+        const slot = bufferLleno ? (this._votosHead + i) % TAMANO_BUFFER : i
+        const idxL = this._votosLetras[slot]
+        this._bufLetras[i] = idxL === IDX_DESCARTE ? '-' : ALFABETO[idxL]
+      }
 
       this.cb.alActualizarDebug({
         probRed: probPico, confEfectiva: confianzaEfectiva,
@@ -160,13 +192,15 @@ export class MotorInferencia {
         bufferProgreso
       } satisfies CargaDebug)
 
-      if (this.bufferVotos.length < TAMANO_BUFFER) return
+      if (!bufferLleno) return
       if (pesoCandidato < PESO_MINIMO_VOTOS) return
-      if (candidato === '') { this.ultimaLetra = ''; return }
+      if (idxCandidato === IDX_DESCARTE) { this.ultimaLetra = ''; return }
+
+      const candidato = ALFABETO[idxCandidato]
 
       // performance.now() es monotónico — Date.now() salta si el reloj del SO cambia
       const ahora        = performance.now()
-      const esComando    = candidato === ' ' || candidato === BORRAR
+      const esComando    = idxCandidato === IDX_ESPACIO || idxCandidato === IDX_BORRAR
       const esMismaLetra = candidato === this.ultimaLetra && !esComando
       const cooldown     = esComando    ? COOLDOWN_COMANDO_MS
                          : esMismaLetra ? COOLDOWN_MISMA_LETRA
@@ -176,7 +210,10 @@ export class MotorInferencia {
 
       this.ultimaLetra           = candidato
       this.ultimoTiempoEscritura = ahora
-      this.bufferVotos           = []
+      this._votosLetras.fill(IDX_DESCARTE)
+      this._votosPesos.fill(0)
+      this._votosHead  = 0
+      this._votosLleno = false
 
       this.cb.alConfirmarLetra(candidato)
 
