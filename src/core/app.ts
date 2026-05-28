@@ -74,12 +74,15 @@ export class YOSOApp {
     try {
       this.ui.mensajeSplash('Cargando modelo…')
 
+      // WebGPU si está disponible; ORT cae a WASM solo si el provider falla.
+      // intraOpNumThreads tope 2: respeta CPUs single-core sin contender.
+      const hilos = Math.min(2, navigator.hardwareConcurrency ?? 2)
       const [sesion, centroidesRaw] = await Promise.all([
         ort.InferenceSession.create('./YOSO.onnx', {
-          executionProviders:     ['wasm'],
+          executionProviders:     ['webgpu', 'wasm'],
           graphOptimizationLevel: 'all',
           enableCpuMemArena:      true,
-          intraOpNumThreads:      2
+          intraOpNumThreads:      hilos
         }),
         fetch('./Centroides.json')
           .then(r => r.ok ? r.json() : null)
@@ -118,7 +121,9 @@ export class YOSOApp {
 
   // ── Inicialización de cámara (reiniciable vía botón de reintento) ─────────────
   private async _iniciarCamara(): Promise<void> {
-    const esMobil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    // pointer:coarse + maxTouchPoints detecta táctiles incluyendo iPadOS 13+
+    // que reporta UA "Macintosh"
+    const esMobil = matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0
     const constraints: MediaStreamConstraints = esMobil
       ? { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
       : { video: { width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
@@ -162,10 +167,17 @@ export class YOSOApp {
     let skeletonOculto  = false
     let ultimoVideoTime = -1
 
+    // rVFC = un callback exacto por frame del video (más preciso que rAF, sin
+    // dependencia del refresh rate del display). Fallback a rAF en Safari iOS <17.
+    const usaVFC = typeof (this.video as any).requestVideoFrameCallback === 'function'
+    const programar = usaVFC
+      ? () => (this.video as any).requestVideoFrameCallback(loop)
+      : () => requestAnimationFrame(loop)
+
     const loop = () => {
-      requestAnimationFrame(loop)
+      programar()
       if (this._pausado || this.video.readyState < 2) return
-      if (this.video.currentTime === ultimoVideoTime) return  // frame ya procesado
+      if (this.video.currentTime === ultimoVideoTime) return  // misma frame
       ultimoVideoTime = this.video.currentTime
 
       const ahora = performance.now()
@@ -189,7 +201,7 @@ export class YOSOApp {
       this._alRecibirResultados(resultado)
       this.ui.actualizarPerfFrame(mpMs, fps)
     }
-    requestAnimationFrame(loop)
+    programar()
   }
 
   // ── Page Visibility API — pausa térmica ───────────────────────────────────────

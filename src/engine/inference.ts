@@ -26,6 +26,8 @@ const PUNTAS                 = [4, 8, 12, 16, 20] as const
 export class MotorInferencia {
   private sesion:     ort.InferenceSession | null = null
   private centroides: MapaCentroides | null = null
+  private _inputName  = ''
+  private _outputName = ''
 
   // Buffers preasignados — evitan GC por frame
   private readonly bufCoords   = new Float32Array(42)
@@ -40,6 +42,7 @@ export class MotorInferencia {
 
   // Estado del buffer de votación ponderada
   private bufferVotos: Array<{ letra: string; peso: number }> = []
+  private readonly _pesoPorLetra = new Map<string, number>()
   private ultimaLetra:           string = ''
   private ultimoTiempoEscritura: number = 0
   private _procesando = false
@@ -51,6 +54,9 @@ export class MotorInferencia {
     this.sesion     = opts.sesion as ort.InferenceSession
     this.centroides = opts.centroides
     this.cb         = opts.callbacks
+    // Cacheados — evita lecturas redundantes por frame
+    this._inputName  = this.sesion.inputNames[0]
+    this._outputName = this.sesion.outputNames[0]
   }
 
   // forzar=false (default): solo limpia buffer — ultimaLetra y ultimoTiempoEscritura
@@ -79,10 +85,10 @@ export class MotorInferencia {
       const tensor = new ort.Tensor('float32', entrada, [1, 48])
 
       const t0Inf         = performance.now()
-      const salida        = await this.sesion.run({ [this.sesion.inputNames[0]]: tensor })
+      const salida        = await this.sesion.run({ [this._inputName]: tensor })
       const latInferencia = performance.now() - t0Inf
 
-      const datos = salida[this.sesion.outputNames[0]].data as Float32Array
+      const datos = salida[this._outputName].data as Float32Array
       const { probs, indicePico, probPico } = this._softmax(datos)
 
       let letra = ALFABETO[indicePico]
@@ -113,12 +119,13 @@ export class MotorInferencia {
       this.bufferVotos.push({ letra: letraDetectada, peso: letraDetectada === '-' ? 0 : confianzaEfectiva })
       if (this.bufferVotos.length > TAMANO_BUFFER) this.bufferVotos.shift()
 
-      const pesoPorLetra: Record<string, number> = {}
+      this._pesoPorLetra.clear()
       let candidato = '', pesoCandidato = 0
       for (const { letra: l, peso } of this.bufferVotos) {
         if (l === '-') continue
-        pesoPorLetra[l] = (pesoPorLetra[l] ?? 0) + peso
-        if (pesoPorLetra[l] > pesoCandidato) { pesoCandidato = pesoPorLetra[l]; candidato = l }
+        const acumulado = (this._pesoPorLetra.get(l) ?? 0) + peso
+        this._pesoPorLetra.set(l, acumulado)
+        if (acumulado > pesoCandidato) { pesoCandidato = acumulado; candidato = l }
       }
       const bufferProgreso = this.bufferVotos.length >= TAMANO_BUFFER
         ? Math.min(pesoCandidato / PESO_MINIMO_VOTOS, 1.0)
@@ -140,7 +147,8 @@ export class MotorInferencia {
       if (pesoCandidato < PESO_MINIMO_VOTOS) return
       if (candidato === '') { this.ultimaLetra = ''; return }
 
-      const ahora        = Date.now()
+      // performance.now() es monotónico — Date.now() salta si el reloj del SO cambia
+      const ahora        = performance.now()
       const esComando    = candidato === ' ' || candidato === BORRAR
       const esMismaLetra = candidato === this.ultimaLetra && !esComando
       const cooldown     = esComando    ? COOLDOWN_COMANDO_MS
