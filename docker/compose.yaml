@@ -1,8 +1,24 @@
 services:
   app:
     build:
-      context: .
+      context: ..
       dockerfile: docker/Dockerfile
     ports:
-      - "8080:80"
+      - "8080:8080"
     restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /var/cache/nginx:rw,size=64m
+      - /var/run:rw,size=8m
+      - /tmp:rw,size=16m
+    mem_limit: 256m
+    pids_limit: 100
