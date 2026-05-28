@@ -130,7 +130,18 @@ self.addEventListener('fetch', e => {
         .catch(() =>
           safeMatch(e.request)
             .then(c => c ?? safeMatch('/'))
-            .then(c => c ?? new Response('Offline', { status: 503 }))
+            .then(c => c ?? new Response(
+              '<!doctype html><html lang="es"><meta charset="utf-8">' +
+              '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+              '<title>YOSO — Sin conexión</title>' +
+              '<style>body{margin:0;display:grid;place-items:center;min-height:100vh;' +
+              'background:#0b1220;color:#e2e8f0;font:500 15px/1.5 system-ui,sans-serif;' +
+              'text-align:center;padding:24px}h1{margin:0 0 12px;font-size:20px;color:#38BDF8}' +
+              'p{margin:0;max-width:32ch;opacity:.8}</style>' +
+              '<h1>YOSO sin conexión</h1>' +
+              '<p>No hay red ni copia en caché. Reintenta cuando recuperes la conexión.</p>',
+              { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+            ))
         )
     )
     return
