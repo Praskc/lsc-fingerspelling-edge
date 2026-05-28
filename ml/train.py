@@ -196,7 +196,8 @@ class SignDataset(Dataset):
         coords = x[:42].reshape(21, 2)
         rotated = coords @ np.array([[c, s], [-s, c]], dtype=np.float32)
         x[:42] = rotated.flatten()
-        x[42] = float(x[42]) + a
+        # Wrap a [-π, π] — coherente con np.arctan2 usado en recalibrar()
+        x[42] = ((float(x[42]) + a + np.pi) % (2 * np.pi)) - np.pi
 
         sc      = random.uniform(0.88, 1.12)
         x[:42] *= sc

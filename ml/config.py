@@ -3,10 +3,18 @@ import os
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-DATA_ROOTS: list[str] = [
+# Rutas a datasets de imágenes. Configurables vía env var YOSO_DATA_ROOTS
+# (separadas por ';' en Windows, ':' en Unix). Si no se define, usa los defaults
+# del autor del proyecto — funciona en su máquina, falla con aviso en otras.
+_DEFAULT_DATA_ROOTS: list[str] = [
     r"C:\Users\esteb\OneDrive\Documentos\Proyectos III\ULT\train\images",
     r"C:\Users\esteb\OneDrive\Documentos\Proyectos III\ULT\ASL_Alphabet_Dataset\asl_alphabet_train",
 ]
+_env_roots = os.environ.get('YOSO_DATA_ROOTS', '').strip()
+DATA_ROOTS: list[str] = (
+    [p for p in _env_roots.split(os.pathsep) if p]
+    if _env_roots else _DEFAULT_DATA_ROOTS
+)
 OUTPUT_CSV  = os.path.join(_ROOT, 'lsc_master.csv')
 CPU_WORKERS = max(1, (os.cpu_count() or 4) - 1)
 

@@ -13,7 +13,8 @@ def recalibrar_batch(
     pts = pts - pts[:, 0:1, :]                                   # traslación
 
     norms = np.linalg.norm(pts[:, 9, :], axis=1)                 # (N,)
-    valid = norms > 1e-6
+    # Mismo umbral que src/engine/inference.ts — ver nota en recalibrar()
+    valid = norms > 1e-4
     safe  = np.where(valid, norms, 1.0)
     pts   = pts / safe[:, np.newaxis, np.newaxis]                # normalización
 
@@ -34,7 +35,10 @@ def recalibrar(coords_42: np.ndarray) -> tuple[np.ndarray, float] | None:
     pts = coords_42.reshape(21, 2).astype(np.float32)
     pts -= pts[0]
     dist = np.linalg.norm(pts[9])
-    if dist < 1e-6:
+    # Mismo umbral que src/engine/inference.ts (dp <= 1e-4) — preserva la
+    # invariante crítica: el dataset no debe contener muestras que la
+    # inferencia descarte por colapso de la mano.
+    if dist <= 1e-4:
         return None
     pts /= dist
     return pts.flatten(), float(np.arctan2(pts[9, 1], pts[9, 0]))
