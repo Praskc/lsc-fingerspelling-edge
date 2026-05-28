@@ -2,7 +2,7 @@
 // INFERENCE.TS — Motor de inferencia YOSO
 // ============================================================================
 import * as ort from 'onnxruntime-web'
-import type { Punto, Lateralidad, MapaCentroides, OpcionesInicioInferencia, CargaDebug, ItemTop } from './types'
+import type { Punto, Lateralidad, MapaCentroides, OpcionesInicioInferencia, CargaDebug, ItemTop, Centroide } from './types'
 
 export const ALFABETO: string[] = [
   'A','B','C','D','E','F','G','H','I','J','K','L','M',
@@ -44,6 +44,9 @@ export class MotorInferencia {
   private _tensor:    ort.Tensor | null = null
   private _inputFeed: Record<string, ort.Tensor> = {}
 
+  // Centroides indexados por posición en ALFABETO — evita string ops por frame
+  private _centroidesPorIndice: (Centroide | null)[] = []
+
   // Estado del buffer de votación ponderada
   private bufferVotos: Array<{ letra: string; peso: number }> = []
   private readonly _pesoPorLetra = new Map<string, number>()
@@ -64,6 +67,11 @@ export class MotorInferencia {
     // Tensor preasignado — backing = bufFeatures. ORT lee tensor.data en cada run().
     this._tensor = new ort.Tensor('float32', this.bufFeatures, [1, 48])
     this._inputFeed[this._inputName] = this._tensor
+    // Mapeo letra → centroide por índice del alfabeto. ' ' y BORRAR no tienen.
+    this._centroidesPorIndice = ALFABETO.map(letra => {
+      if (!this.centroides || letra === ' ' || letra === BORRAR) return null
+      return this.centroides[letra.toLowerCase()] ?? null
+    })
   }
 
   // forzar=false (default): solo limpia buffer — ultimaLetra y ultimoTiempoEscritura
@@ -100,8 +108,10 @@ export class MotorInferencia {
 
       let letra = ALFABETO[indicePico]
       letra = this._juezUR(letra, puntos, esCamaraIzquierda)
+      // Re-derivar índice tras el ajuste U/R (puede haber alternado entre 'U' y 'R')
+      const indiceLetraFinal = ALFABETO.indexOf(letra)
 
-      const { confianzaEfectiva, distancia, distRef } = this._filtroZonaGris(letra, entrada, probPico)
+      const { confianzaEfectiva, distancia, distRef } = this._filtroZonaGris(indiceLetraFinal, entrada, probPico)
       const latProcesamiento = performance.now() - t0Proc
 
       let letraDetectada = confianzaEfectiva >= UMBRAL_CONFIANZA ? letra : '-'
@@ -237,14 +247,11 @@ export class MotorInferencia {
   }
 
   private _filtroZonaGris(
-    letra: string,
+    indiceLetra: number,
     entrada: Float32Array,
     probRed: number
   ): { confianzaEfectiva: number; distancia: number | null; distRef: number | null } {
-    if (!this.centroides || letra === ' ' || letra === BORRAR) {
-      return { confianzaEfectiva: probRed, distancia: null, distRef: null }
-    }
-    const centroide = this.centroides[letra.toLowerCase()]
+    const centroide = this._centroidesPorIndice[indiceLetra]
     if (!centroide) return { confianzaEfectiva: probRed, distancia: null, distRef: null }
 
     let suma = 0
