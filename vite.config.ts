@@ -22,8 +22,25 @@ export default defineConfig({
     exclude: ['onnxruntime-web', '@mediapipe/tasks-vision']
   },
   build: {
+    target:    'es2022',
+    minify:    'terser',
+    cssMinify: 'lightningcss',
+    terserOptions: {
+      compress: {
+        passes:     2,
+        drop_console: false,
+        pure_funcs: ['console.debug', 'console.info']
+      },
+      mangle: { safari10: true }
+    },
     rollupOptions: {
-      plugins: [excluirWasmOrt]
+      plugins: [excluirWasmOrt],
+      output: {
+        manualChunks: {
+          'ort':       ['onnxruntime-web'],
+          'mediapipe': ['@mediapipe/tasks-vision'],
+        }
+      }
     }
   }
 })

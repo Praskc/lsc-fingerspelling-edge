@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "lightningcss": "^1.32.0",
+    "terser": "^5.48.0",
     "typescript": "~5.4.5",
     "vite": "^6.4.2"
   },
