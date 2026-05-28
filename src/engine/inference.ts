@@ -192,7 +192,8 @@ export class MotorInferencia {
     const dp = Math.sqrt(this.bufCoords[18] ** 2 + this.bufCoords[19] ** 2)
     if (dp <= 1e-4) return null  // mano ocluida — descartar frame
 
-    for (let i = 0; i < 42; i++) this.bufCoords[i] /= dp
+    const invDp = 1 / dp
+    for (let i = 0; i < 42; i++) this.bufCoords[i] *= invDp
 
     this.bufFeatures.set(this.bufCoords)
     this.bufFeatures[42] = Math.atan2(this.bufCoords[19], this.bufCoords[18])
