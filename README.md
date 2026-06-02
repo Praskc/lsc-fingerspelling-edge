@@ -43,8 +43,10 @@ Input(48) → Linear(512) → ReLU → Dropout(0.35)   ┐
 | Muestras de entrenamiento | ~360.000 |
 | Accuracy en test | **98.63%** |
 | Early stopping | Epoch 85 |
-| Latencia de inferencia | **< 10ms** |
+| Latencia del modelo (ORT WASM SIMD) | **~0.7 ms** |
+| Pipeline end-to-end por frame | **< 1 ms** (cero allocs por frame) |
 | Tamaño del modelo ONNX | ~2.4 MB |
+| Provider de inferencia | ONNX Runtime WASM con 2 hilos (WebGPU descartado: overhead >> compute para este tamaño) |
 
 ## Feature Engineering — 48 features
 
@@ -83,6 +85,22 @@ Red neuronal → Softmax estable → Juez U/R → Filtro zona gris → Buffer vo
 | SPACE / DELETE | 400 ms |
 
 **Escudo cinético** — SPACE y DELETE requieren jitter < 0.02 para evitar activación accidental por movimiento
+
+### Hot path con cero allocaciones por frame
+
+El loop de inferencia mantiene buffers preasignados que se reutilizan entre frames, eliminando GC presión durante sesiones largas:
+
+| Estructura | Tipo | Reemplazo de |
+|------------|------|--------------|
+| `bufCoords` (42), `bufFeatures` (48) | `Float32Array` preasignado | Allocs en cada `_preprocesar` |
+| `bufSoftmax` (28) | `Float32Array` preasignado | Allocs por frame en softmax |
+| `_top3Buf` | Array de 3 objetos reutilizados | Objetos nuevos por frame |
+| `_votosLetras` (Int8Array 9) + `_votosPesos` (Float32Array 9) + head circular | Buffer circular indexado | `Array<{letra,peso}>` con `push`/`shift` O(n) |
+| `_pesoPorLetra` (Float32Array 28) | Acumulador indexado por letra | `Map<string,number>` |
+| `_centroidesPorIndice` (28) | Lookup O(1) por índice del alfabeto | `centroides[letra.toLowerCase()]` por frame |
+| `_tensor` + `_inputFeed` | Reutilizados entre `session.run()` | `new ort.Tensor` por frame |
+
+Pre-cálculo de `invDp = 1/dp` reemplaza 42 divisiones por 42 multiplicaciones en la normalización anatómica.
 
 ## Pipeline de entrenamiento
 
@@ -159,7 +177,7 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 │   │   ├── app.ts          # Orquestador — pipeline Tasks-Vision, ROI, visibilidad, luminosidad
 │   │   └── main.ts         # Entry point + registro del Service Worker
 │   ├── engine/
-│   │   ├── inference.ts    # Motor de IA — preprocesado, softmax, filtros, buffer de votos
+│   │   ├── inference.ts    # Motor de IA — preprocesado, softmax, filtros, buffer circular de votos
 │   │   └── types.ts        # Interfaces TypeScript del motor
 │   ├── game/
 │   │   └── game.ts         # Motor de gamificación — palabras por niveles, banco local 300 palabras
@@ -182,19 +200,26 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 │   ├── robots.txt          # Directivas para crawlers
 │   └── favicon.svg         # Ícono de la app
 ├── ml/
+│   ├── __init__.py
 │   ├── extract.py          # Extractor de landmarks desde imágenes del dataset
 │   ├── train.py            # Entrenamiento, limpieza IQR, exportación ONNX
-│   ├── features.py         # Feature engineering compartido
-│   ├── config.py           # Configuración del pipeline ML
+│   ├── features.py         # Feature engineering compartido (umbral 1e-4 alineado con TS)
+│   ├── config.py           # Configuración del pipeline ML (datasets vía env YOSO_DATA_ROOTS)
 │   └── model/              # Salida del entrenamiento (ONNX + JSON) — no versionado
 ├── docker/
-│   ├── Dockerfile          # Multi-stage: node:22-alpine builder → nginx:1.27-alpine runtime
-│   ├── compose.yaml        # Docker Compose — puerto 8080
-│   └── nginx.conf          # Caché diferenciada, COOP/COEP, CSP completa, gzip
+│   ├── Dockerfile          # Multi-stage: node:22-alpine builder → nginx:1.27-alpine runtime non-root
+│   ├── compose.yaml        # Docker Compose — read-only fs, cap_drop ALL, tmpfs, memory limits
+│   └── nginx.conf          # Listen 8080, gzip ampliado, sendfile, CSP completa, dotfile deny
+├── docs/                   # Documentación generada — no versionado (gitignored)
 ├── index.html              # HTML principal
-├── vite.config.ts          # Headers COOP/COEP para SharedArrayBuffer (WASM threads) en dev/preview
-├── vercel.json             # Headers de seguridad completos (COOP/COEP/CSP) para Vercel
-└── tsconfig.json           # TypeScript strict mode
+├── vite.config.ts          # COOP/COEP + manualChunks (ort/mediapipe) + terser + lightningcss
+├── vercel.json             # Headers de seguridad completos (HSTS, CORP, Permissions-Policy, CSP)
+├── tsconfig.json           # TypeScript strict mode
+├── package.json            # pnpm@11, override protobufjs ≥7.5.8 (CVE)
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml     # Workspace pnpm (sin packages anidados, root simple)
+├── .dockerignore
+└── .gitignore              # Ignora docs/superpowers/, ml/model/, dist/, node_modules/
 ```
 
 ## Instalación y uso
@@ -229,13 +254,15 @@ cp ml/model/YOSO.onnx public/
 cp ml/model/Centroides.json public/
 ```
 
-> **Consistencia crítica:** `ml/extract.py`, `ml/train.py` e `src/inference.ts` implementan el mismo pipeline de normalización anatómica. Cualquier cambio debe aplicarse en los tres.
+> **Consistencia crítica:** `ml/extract.py`, `ml/train.py` e `src/engine/inference.ts` implementan el mismo pipeline de normalización anatómica. Cualquier cambio debe aplicarse en los tres. El umbral de descarte de mano colapsada (`dp <= 1e-4`) está alineado entre `ml/features.py` y `src/engine/inference.ts`.
+
+> **Datasets configurables:** `ml/config.py` lee la variable de entorno `YOSO_DATA_ROOTS` (rutas separadas por `;` en Windows o `:` en Unix) para apuntar a tus propios datasets, sin tocar código.
 
 ## Despliegue
 
 ### Vercel
 
-Listo para desplegar sin configuración adicional. `vercel.json` configura los headers COOP/COEP necesarios para ONNX Runtime WASM con multithreading.
+Listo para desplegar sin configuración adicional. `vercel.json` configura el set completo de headers de seguridad: COOP/COEP (para SharedArrayBuffer), HSTS (2 años + includeSubDomains), CORP (`same-origin`), Permissions-Policy (cámara permitida, resto deshabilitado), CSP estricta (`'wasm-unsafe-eval'` sin `'unsafe-eval'`), X-Frame-Options DENY.
 
 ```bash
 pnpm run build
@@ -244,14 +271,32 @@ pnpm run build
 
 ### Docker
 
-Build multi-stage: construye con Node 22 Alpine y sirve con nginx 1.27 Alpine. La imagen final pesa ~25 MB.
+Build multi-stage: construye con Node 22 Alpine (con BuildKit cache mount para pnpm store) y sirve con nginx 1.27 Alpine. El contenedor está hardened con perfil de producción:
+
+| Hardening | Implementación |
+|-----------|----------------|
+| Usuario no-root | `USER nginx` en el stage final, listen en 8080 |
+| Read-only filesystem | `read_only: true` en compose |
+| Capacidades mínimas | `cap_drop: [ALL]` + cap_add solo `CHOWN`, `SETUID`, `SETGID`, `NET_BIND_SERVICE` |
+| Sin escalada de privilegios | `security_opt: [no-new-privileges:true]` |
+| Tmpfs aislados | `/var/cache/nginx`, `/var/run`, `/tmp` con tamaños acotados |
+| Límites de recursos | `mem_limit: 256m`, `pids_limit: 100` |
+| Healthcheck | `wget -q --spider http://127.0.0.1:8080/` cada 30s |
 
 ```bash
-docker compose up --build          # Levanta en http://localhost:8080
-docker compose up --build -d       # En segundo plano
+docker compose -f docker/compose.yaml up --build       # http://localhost:8080
+docker compose -f docker/compose.yaml up --build -d    # En segundo plano
 ```
 
-El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutable`, modelo 7 días, SW sin caché) y envía los headers COOP/COEP en todas las rutas.
+El `nginx.conf` incluye además:
+- `server_tokens off` (no leak de versión)
+- `limit_except GET HEAD OPTIONS` (read-only)
+- `sendfile on; tcp_nopush on; tcp_nodelay on; aio threads` (kernel zero-copy)
+- `keepalive_timeout 30; keepalive_requests 100` (mobile reconnect)
+- `gzip` ampliado a `application/wasm` y `application/octet-stream` con `gzip_static on`
+- `location ~ /\. { deny all; }` (dotfiles bloqueados)
+- Caché diferenciada (assets con hash `immutable`, modelo 7 días, SW sin caché)
+- Headers de seguridad COOP/COEP/HSTS/CORP/Permissions-Policy/CSP en cada `location`
 
 ## Notas técnicas
 
@@ -261,7 +306,11 @@ El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutabl
 
 **SharedArrayBuffer** — ONNX Runtime WASM con `intraOpNumThreads: 2` requiere los headers `Cross-Origin-Opener-Policy: same-origin` y `Cross-Origin-Embedder-Policy: require-corp`. Configurados en `vite.config.ts` (dev/preview), `vercel.json` (producción Vercel) y `docker/nginx.conf` (Docker)
 
-**Service Worker y modelo ONNX** — el modelo (2.4 MB) se precachea en la instalación del SW. Tras la primera carga la app funciona completamente offline
+**Service Worker y modelo ONNX** — el modelo (2.4 MB) se precachea en la instalación del SW. Tras la primera carga la app funciona completamente offline. La versión de caché es `yoso-v6` (revertida desde v7 tras detectar regresión empírica de FPS en dev mode con precache extendido)
+
+**Bundle partitionado** — Vite produce chunks separados: `ort-*.js` (~402 KB), `mediapipe-*.js` (~132 KB), `index-*.js` (~37 KB). Updates de código de app preservan los caches de ORT y MediaPipe en el SW, reduciendo bytes re-descargados tras un deploy. Minificación con terser en 2 pasadas y CSS con lightningcss
+
+**WebGPU vs WASM SIMD** — Para modelos pequeños como este FCNN (~455K params), el overhead fijo de WebGPU (dispatch + sync + transferencia) excede el ahorro de compute. Se prefiere WASM SIMD con 2 hilos: latencia ~0.7ms vs ~10ms con WebGPU. Documentado en el commit `78ec8fe`
 
 ## Ramas
 
@@ -272,8 +321,11 @@ El `nginx.conf` incluido gestiona caché diferenciada (assets con hash `immutabl
 
 ## Changelog
 
-### v3 — refactor (actual)
-Modularización de `src/` en `core/`, `engine/`, `game/`, `lib/` y `ui/`. Migración a `@mediapipe/tasks-vision@0.10.35` con fix de lateralidad. CSP completa en Vercel y Docker. Service worker `yoso-v6` con cache de Google Storage. Panel de debug extendido con MP frame y FPS. `compose.yaml` movido a `docker/`.
+### v3.0 — pulido total del backend (actual)
+Motor con cero allocaciones por frame mediante buffer circular de votos (`Int8Array(9)` + `Float32Array(9)` + head pointer), acumulador de pesos indexado por letra (`Float32Array(28)` reemplazando `Map<string,number>`), reuso de `ort.Tensor` y `inputFeed` entre frames, pre-cálculo de `invDp` (1 división vs 42), mapa de centroides indexado por posición en alfabeto. Build optimizado: terser passes 2, manualChunks separando ORT y MediaPipe, CSS con lightningcss, target ES2022. Docker hardened: usuario nginx no-root con HEALTHCHECK, listen 8080, read-only filesystem, `cap_drop ALL`, `no-new-privileges`, tmpfs para escrituras, límites de memoria y PIDs. Nginx con sendfile + tcp_nopush + keepalive optimizado + gzip ampliado a WASM/ONNX + `server_tokens off` + dotfile deny. Seguridad: CSP sin `'unsafe-eval'` (usa `'wasm-unsafe-eval'`), HSTS 2 años, Cross-Origin-Resource-Policy, Permissions-Policy estricta, pin de protobufjs ≥7.5.8 (CVE). ML alineado: umbral `1e-4` en `ml/features.py` consistente con TypeScript, `YOSO_DATA_ROOTS` configurable por env, wrap angular en augmentation.
+
+### v3 — refactor
+Modularización de `src/` en `core/`, `engine/`, `game/`, `lib/` y `ui/`. Migración a `@mediapipe/tasks-vision@0.10.35` con fix de lateralidad. CSP en Vercel y Docker. Service worker `yoso-v6` con cache de Google Storage. Panel de debug extendido con MP frame y FPS. `compose.yaml` movido a `docker/`.
 
 ### v2 — refactor
 Migración a TypeScript strict. PWA instalable y funcional offline. Gamificación con banco local de 300 palabras. Modo aprendizaje con grid interactivo. Buffer de votación ponderado. ROI adaptativo. Detección de luminosidad. Panel de debug. Deploy en Vercel y Docker.
