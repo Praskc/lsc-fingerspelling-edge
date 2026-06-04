@@ -11,11 +11,20 @@ const COOP_HEADERS = {
 // Self-hosting: copia los WASM de ORT y MediaPipe a dist/ con paths flat.
 // vite-plugin-static-copy v4 preserva la estructura de directorios del src,
 // lo cual es indeseable para node_modules. Plugin inline para control total.
+// ORT 1.25 elige la variante en runtime según capabilities del browser
+// (basic, jsep para WebGPU, asyncify, jspi). Copiamos todas para que
+// cualquier elección encuentre el archivo. ~76 MB total extra (jsep es ~26 MB).
 const ASSETS_SELF_HOSTED: Array<[string, string]> = [
-  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs',        'ort/ort-wasm-simd-threaded.mjs'],
-  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm',       'ort/ort-wasm-simd-threaded.wasm'],
-  ['node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.js',   'mediapipe/vision_wasm_internal.js'],
-  ['node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.wasm', 'mediapipe/vision_wasm_internal.wasm'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs',           'ort/ort-wasm-simd-threaded.mjs'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm',          'ort/ort-wasm-simd-threaded.wasm'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.mjs',      'ort/ort-wasm-simd-threaded.jsep.mjs'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm',     'ort/ort-wasm-simd-threaded.jsep.wasm'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.mjs',  'ort/ort-wasm-simd-threaded.asyncify.mjs'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm', 'ort/ort-wasm-simd-threaded.asyncify.wasm'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jspi.mjs',      'ort/ort-wasm-simd-threaded.jspi.mjs'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jspi.wasm',     'ort/ort-wasm-simd-threaded.jspi.wasm'],
+  ['node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.js',      'mediapipe/vision_wasm_internal.js'],
+  ['node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.wasm',    'mediapipe/vision_wasm_internal.wasm'],
 ]
 
 const copiaAssetsSelfHosted: Plugin = {
