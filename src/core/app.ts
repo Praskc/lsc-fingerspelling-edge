@@ -68,8 +68,8 @@ export class YOSOApp {
 
   // ── Arranque ─────────────────────────────────────────────────────────────────
   public async iniciar(): Promise<void> {
-    // Los binarios WASM vienen del CDN con versión anclada al paquete npm instalado
-    ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.25.1/dist/'
+    // Binarios WASM self-hosted en /ort/ (copiados desde node_modules en build)
+    ort.env.wasm.wasmPaths = '/ort/'
 
     try {
       this.ui.mensajeSplash('Cargando modelo…')
@@ -144,12 +144,10 @@ export class YOSOApp {
 
     this.ui.ocultarEstadoVacio()
 
-    const vision = await FilesetResolver.forVisionTasks(
-      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
-    )
+    const vision = await FilesetResolver.forVisionTasks('/mediapipe')
     const handLandmarker = await HandLandmarker.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+        modelAssetPath: '/mediapipe/hand_landmarker.task',
         delegate: 'GPU'
       },
       runningMode: 'VIDEO',

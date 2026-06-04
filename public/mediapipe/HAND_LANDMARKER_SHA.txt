@@ -1,0 +1,7 @@
+File:       hand_landmarker.task
+Source:     https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+Version:    float16/1
+Downloaded: 2026-06-04
+Size:       7,819,105 bytes (~7.5 MB)
+SHA-256:    fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1
+License:    Apache 2.0 (Google LLC)

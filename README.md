@@ -340,11 +340,30 @@ El `nginx.conf` incluye además:
 
 **SharedArrayBuffer**: ONNX Runtime WASM con `intraOpNumThreads: 2` requiere los headers `Cross-Origin-Opener-Policy: same-origin` y `Cross-Origin-Embedder-Policy: require-corp`. Configurados en `vite.config.ts` (dev/preview), `vercel.json` (producción Vercel) y `docker/nginx.conf` (Docker)
 
-**Service Worker y modelo ONNX**: el modelo (2.4 MB) se precachea en la instalación del SW. Tras la primera carga la app funciona completamente offline. La versión de caché es `yoso-v6` (revertida desde v7 tras detectar regresión empírica de FPS en dev mode con precache extendido)
+**Service Worker y modelo ONNX**: el modelo (2.4 MB) se precachea en la instalación del SW. Tras la primera carga la app funciona completamente offline. La versión de caché es `yoso-v8`. Bumpeada al migrar a self-hosting de assets (URLs cambiaron, requiere invalidar cache viejo). PRECACHE list se mantiene mínima para evitar la regresión de FPS observada en v7 con precache extendido.
 
 **Bundle partitionado**: Vite produce chunks separados: `ort-*.js` (~402 KB), `mediapipe-*.js` (~132 KB), `index-*.js` (~37 KB). Updates de código de app preservan los caches de ORT y MediaPipe en el SW, reduciendo bytes re-descargados tras un deploy. Minificación con terser en 2 pasadas y CSS con lightningcss
 
 **WebGPU vs WASM SIMD**: Para modelos pequeños como este FCNN (~455K params), el overhead fijo de WebGPU (dispatch + sync + transferencia) excede el ahorro de compute. Se prefiere WASM SIMD con 2 hilos: latencia ~0.7ms vs ~10ms con WebGPU. Documentado en el commit `78ec8fe`
+
+## Assets de terceros self-hosted
+
+A partir de v3.1, todos los binarios necesarios para inferencia se sirven desde el mismo origen que la app, eliminando dependencia runtime de CDN externos:
+
+| Asset | Origen original | Tamaño | Servido desde |
+|-------|------------------|--------|----------------|
+| `hand_landmarker.task` | MediaPipe (Google) | ~7.5 MB | `/mediapipe/` (commiteado a public/) |
+| `vision_wasm_internal.{js,wasm}` | @mediapipe/tasks-vision | ~5 MB | `/mediapipe/` (copy en build) |
+| `ort-wasm-simd-threaded.{mjs,wasm}` | onnxruntime-web | ~12 MB | `/ort/` (copy en build) |
+
+Atribuciones legales completas en [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Licencias compatibles: Apache 2.0 (MediaPipe) y MIT (ORT).
+
+Implicancias:
+
+- App arranca sin internet desde el primer load (si está instalada como PWA)
+- CSP `script-src` y `connect-src` sin orígenes externos (solo `'self'` + `api.datamuse.com`)
+- Bundle inicial: 27 MB (vs 5 MB antes), cacheado por SW en primera visita
+- Cero dependencia de disponibilidad de `cdn.jsdelivr.net` o `storage.googleapis.com`
 
 ## Ramas
 

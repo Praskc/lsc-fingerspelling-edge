@@ -1,13 +1,50 @@
 import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
+import { copyFile, mkdir } from 'node:fs/promises'
+import { resolve, dirname } from 'node:path'
 
 const COOP_HEADERS = {
   'Cross-Origin-Opener-Policy':  'same-origin',
   'Cross-Origin-Embedder-Policy': 'require-corp',
 }
 
-const excluirWasmOrt: Plugin = {
-  name: 'excluir-wasm-ort',
+// Self-hosting: copia los WASM de ORT y MediaPipe a dist/ con paths flat.
+// vite-plugin-static-copy v4 preserva la estructura de directorios del src,
+// lo cual es indeseable para node_modules. Plugin inline para control total.
+// ORT 1.25 elige la variante en runtime según capabilities del browser
+// (basic, jsep para WebGPU, asyncify, jspi). Copiamos todas para que
+// cualquier elección encuentre el archivo. ~76 MB total extra (jsep es ~26 MB).
+const ASSETS_SELF_HOSTED: Array<[string, string]> = [
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs',           'ort/ort-wasm-simd-threaded.mjs'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm',          'ort/ort-wasm-simd-threaded.wasm'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.mjs',      'ort/ort-wasm-simd-threaded.jsep.mjs'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm',     'ort/ort-wasm-simd-threaded.jsep.wasm'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.mjs',  'ort/ort-wasm-simd-threaded.asyncify.mjs'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm', 'ort/ort-wasm-simd-threaded.asyncify.wasm'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jspi.mjs',      'ort/ort-wasm-simd-threaded.jspi.mjs'],
+  ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jspi.wasm',     'ort/ort-wasm-simd-threaded.jspi.wasm'],
+  ['node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.js',      'mediapipe/vision_wasm_internal.js'],
+  ['node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.wasm',    'mediapipe/vision_wasm_internal.wasm'],
+]
+
+const copiaAssetsSelfHosted: Plugin = {
+  name: 'copia-assets-self-hosted',
+  apply: 'build',
+  async closeBundle() {
+    const outDir = resolve(process.cwd(), 'dist')
+    for (const [src, dest] of ASSETS_SELF_HOSTED) {
+      const srcAbs  = resolve(process.cwd(), src)
+      const destAbs = resolve(outDir, dest)
+      await mkdir(dirname(destAbs), { recursive: true })
+      await copyFile(srcAbs, destAbs)
+    }
+  }
+}
+
+// Excluye los .wasm que Rollup bundlea espontáneamente (variantes JSEP/asyncify
+// que no usamos). Solo queremos los WASM copiados explícitamente arriba.
+const excluirWasmRollup: Plugin = {
+  name: 'excluir-wasm-rollup',
   generateBundle(_, bundle) {
     for (const key of Object.keys(bundle)) {
       if (key.endsWith('.wasm')) delete bundle[key]
@@ -21,6 +58,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['onnxruntime-web', '@mediapipe/tasks-vision']
   },
+  plugins: [copiaAssetsSelfHosted],
   build: {
     target:    'es2022',
     minify:    'terser',
@@ -34,7 +72,7 @@ export default defineConfig({
       mangle: { safari10: true }
     },
     rollupOptions: {
-      plugins: [excluirWasmOrt],
+      plugins: [excluirWasmRollup],
       output: {
         manualChunks: {
           'ort':       ['onnxruntime-web'],
