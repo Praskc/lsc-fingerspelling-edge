@@ -1,51 +1,28 @@
 <div align="center">
 
-# YOSO: You Only Sign Once (Rolling)
+# YOSO: You Only Sign Once
 
-**Rama bleeding-edge con auto-bumps de dependencias**  
-*No usar en producción, usa [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main)*
+**Motor de reconocimiento de Lengua de Señas Colombiana (LSC) en tiempo real**  
+*Inferencia edge · Sin servidor · < 10ms de latencia*
 
-[![Branch: rolling](https://img.shields.io/badge/branch-rolling_·_bleeding_edge-F59E0B?style=flat-square)](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling)
-[![Auto-updates](https://img.shields.io/badge/Dependabot-weekly_PRs-025E8C?style=flat-square&logo=dependabot)](https://docs.github.com/en/code-security/dependabot)
-[![Estado](https://img.shields.io/badge/estado-experimental-orange?style=flat-square)](#política-de-promoción-a-main)
+[![Branch: stable](https://img.shields.io/badge/branch-main_·_stable-2EA043?style=flat-square)](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-Web-FF6F00?style=flat-square&logo=onnx&logoColor=white)](https://onnxruntime.ai/)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-Tasks_Vision_0.10.35-00897B?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker)
 [![License](https://img.shields.io/badge/Licencia-GPL_2.0-blue?style=flat-square)](LICENSE)
 
 </div>
 
-> **Esta rama recibe bumps automáticos de `@mediapipe/tasks-vision`, `onnxruntime-web` y todas las devDeps.**
+> **Estás viendo la rama `main`, versión estable de producción.**
 >
-> Acá se prueba que cada nueva versión de dependencia funcione antes de promover a `main`. **No despliegues `rolling` en producción**: Vercel sirve `main`, no esta rama.
+> Esta es la rama que despliega Vercel. Toda mejora aquí pasa primero por la rama `rolling` (auto-updates de dependencias) y se mergea manualmente tras validación. Versión actual: **v3.0**, ver [Changelog](#changelog) al final.
 >
-> | Rama | Propósito | Tu opción |
-> |------|-----------|-----------|
-> | [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main) | **Stable**, producción Vercel | Si vienes a USAR la app, ve aquí |
-> | `rolling` (esta) | Auto-updates de deps, validación previa | Solo si experimentas con bumps |
-> | [`legacy`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/legacy) | Archivada (YOSO v2 JS vanilla) | Histórico |
-
-## Política de promoción a `main`
-
-```
-┌─────────────────┐    weekly cron    ┌──────────────┐    manual merge   ┌──────┐
-│  Dependabot     │ ────open PR ────> │   rolling    │ ─── tras CI OK ──>│ main │
-│  Renovate       │                   │              │                   └──────┘
-└─────────────────┘                   └──────────────┘                       │
-                                                                             ↓
-                                                                     Vercel production
-```
-
-1. Cada semana, **Dependabot** abre PRs en `rolling` con bumps de dependencias
-2. Se ejecuta CI: `npx tsc --noEmit` + `pnpm build` + smoke test manual con cámara
-3. Si pasa todo, **PR manual de `rolling` → `main`**
-4. Merge a `main` dispara deploy automático en Vercel production
-
-## Diferencias actuales vs `main`
-
-| Aspecto | `main` (stable) | `rolling` (esta) |
-|---------|------------------|-------------------|
-| Versiones de dependencias | Pinneadas, validadas | Última publicada (semver) |
-| Despliegue Vercel | Producción | Solo preview (no production) |
-| Estabilidad | Probada antes de cada merge | Puede romper en cualquier bump |
-| Audiencia | Usuarios finales | Maintainer experimentando |
+> | Rama | Propósito | Cuándo usarla |
+> |------|-----------|---------------|
+> | [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main) | **Stable**: producción Vercel | Es la que estás viendo |
+> | [`rolling`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling) | Bleeding edge con auto-bumps de dependencias | Probar features antes del merge a `main` |
+> | [`legacy`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/legacy) | YOSO v2 en JavaScript vanilla, archivado | Histórico / referencia |
 
 ## ¿Qué es YOSO?
 
