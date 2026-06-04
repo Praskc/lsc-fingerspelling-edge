@@ -1,18 +1,9 @@
 import { defineConfig } from 'vite'
-import type { Plugin } from 'vite'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 const COOP_HEADERS = {
   'Cross-Origin-Opener-Policy':  'same-origin',
   'Cross-Origin-Embedder-Policy': 'require-corp',
-}
-
-const excluirWasmOrt: Plugin = {
-  name: 'excluir-wasm-ort',
-  generateBundle(_, bundle) {
-    for (const key of Object.keys(bundle)) {
-      if (key.endsWith('.wasm')) delete bundle[key]
-    }
-  }
 }
 
 export default defineConfig({
@@ -21,6 +12,20 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['onnxruntime-web', '@mediapipe/tasks-vision']
   },
+  plugins: [
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.{mjs,wasm}',
+          dest: 'ort'
+        },
+        {
+          src: 'node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.{js,wasm}',
+          dest: 'mediapipe'
+        }
+      ]
+    })
+  ],
   build: {
     target:    'es2022',
     minify:    'terser',
@@ -34,7 +39,6 @@ export default defineConfig({
       mangle: { safari10: true }
     },
     rollupOptions: {
-      plugins: [excluirWasmOrt],
       output: {
         manualChunks: {
           'ort':       ['onnxruntime-web'],
