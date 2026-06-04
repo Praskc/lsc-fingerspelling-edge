@@ -144,7 +144,7 @@ export class YOSOApp {
 
     this.ui.ocultarEstadoVacio()
 
-    const vision = await FilesetResolver.forVisionTasks('/mediapipe/')
+    const vision = await FilesetResolver.forVisionTasks('/mediapipe')
     const handLandmarker = await HandLandmarker.createFromOptions(vision, {
       baseOptions: {
         modelAssetPath: '/mediapipe/hand_landmarker.task',
