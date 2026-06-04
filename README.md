@@ -5,6 +5,7 @@
 **Motor de reconocimiento de Lengua de Señas Colombiana (LSC) en tiempo real**  
 *Inferencia edge · Sin servidor · < 10ms de latencia*
 
+[![Branch: stable](https://img.shields.io/badge/branch-main_·_stable-2EA043?style=flat-square)](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-Web-FF6F00?style=flat-square&logo=onnx&logoColor=white)](https://onnxruntime.ai/)
@@ -12,6 +13,16 @@
 [![License](https://img.shields.io/badge/Licencia-GPL_2.0-blue?style=flat-square)](LICENSE)
 
 </div>
+
+> **Estás viendo la rama `main` — versión estable de producción.**
+>
+> Esta es la rama que despliega Vercel. Toda mejora aquí pasa primero por la rama `rolling` (auto-updates de dependencias) y se mergea manualmente tras validación. Versión actual: **v3.0**, ver [Changelog](#changelog) al final.
+>
+> | Rama | Propósito | Cuándo usarla |
+> |------|-----------|---------------|
+> | [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main) | **Stable** — producción Vercel | Es la que estás viendo |
+> | [`rolling`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling) | Bleeding edge con auto-bumps de dependencias | Probar features antes del merge a `main` |
+> | [`legacy`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/legacy) | YOSO v2 en JavaScript vanilla, archivado | Histórico / referencia |
 
 ## ¿Qué es YOSO?
 
