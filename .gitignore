@@ -45,3 +45,5 @@ hand_landmarks.csv
 
 .superpowers/
 docs/superpowers/
+.claude/skills/
+.superpowers/

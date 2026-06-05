@@ -1,0 +1,11 @@
+/* ============================================================================
+   YOSO v2 · Sistema de estilos modular
+   Cargado desde index.html. Ver docs/superpowers/specs/2026-06-05-rediseno-frontend-design.md
+   ============================================================================ */
+
+/* Fundación */
+@import './tokens.css';
+@import './reset.css';
+@import './base.css';
+@import './grain.css';
+@import './motion.css';
