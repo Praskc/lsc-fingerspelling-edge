@@ -22,3 +22,6 @@
 @import './components/buffer.css';
 @import './components/signature.css';
 @import './components/button.css';
+
+/* Overlays */
+@import './overlays/splash.css';
