@@ -1,0 +1,98 @@
+/* ============================================================================
+   TOKENS · Variables de diseño YOSO v2
+   Ver spec §4.2 (paleta), §4.3 (tipografía), §4.4 (espaciado), §4.5 (motion).
+   ============================================================================ */
+
+:root {
+  /* ── Superficies oscuras tinted cálidas (OKLCH) ─────────────────────────── */
+  --bg-deep:    oklch(0.13 0.005 70);
+  --bg-base:    oklch(0.16 0.005 70);
+  --surface:    oklch(0.22 0.006 70);
+  --surface-hi: oklch(0.28 0.008 70);
+
+  /* ── Bordes (3 niveles) ─────────────────────────────────────────────────── */
+  --border-soft: oklch(0.28 0.008 70);
+  --border:      oklch(0.34 0.010 70);
+  --border-hi:   oklch(0.42 0.012 70);
+
+  /* ── Texto (5 niveles) ──────────────────────────────────────────────────── */
+  --ink:       oklch(0.88 0.012 70);
+  --ink-mid:   oklch(0.72 0.012 70);
+  --ink-low:   oklch(0.56 0.012 70);
+  --ink-faint: oklch(0.42 0.012 70);
+  --ink-ghost: oklch(0.32 0.010 70);
+
+  /* ── Acentos Cruz-Diez (uso restringido, ver spec §4.2) ─────────────────── */
+  --cd-rojo:     oklch(0.55 0.16 25);
+  --cd-amarillo: oklch(0.78 0.13 80);
+  --cd-verde:    oklch(0.55 0.12 155);
+  --cd-azul:     oklch(0.50 0.13 250);
+
+  /* ── Estado activo (terracota) ──────────────────────────────────────────── */
+  --accent: oklch(0.62 0.13 35);
+
+  /* ── Tipografía: stacks ─────────────────────────────────────────────────── */
+  --font-display: 'Fraunces', Georgia, 'Source Serif Pro', serif;
+  --font-output:  'Fraunces', Georgia, 'Source Serif Pro', serif;
+  --font-italic:  'Fraunces', Georgia, serif;
+  --font-ui:      'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'Departure Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Tipografía: tamaños semánticos ─────────────────────────────────────── */
+  --fs-mono-xs:   9px;
+  --fs-mono-sm:   10px;
+  --fs-mono-md:   11px;
+  --fs-mono-lg:   18px;
+  --fs-mono-xl:   22px;
+  --fs-mono-2xl:  26px;
+  --fs-ui-xs:     11px;
+  --fs-ui-sm:     12px;
+  --fs-ui-md:     13px;
+  --fs-ui-lg:     15px;
+  --fs-output:    26px;
+  --fs-italic-sm: 18px;
+  --fs-italic-md: 22px;
+  --fs-wordmark-mobile:  64px;
+  --fs-wordmark-tablet:  88px;
+  --fs-wordmark-desktop: 120px;
+  --fs-dropcap-mobile:   96px;
+  --fs-dropcap-tablet:   160px;
+  --fs-dropcap-desktop:  220px;
+
+  /* ── Espaciado 4pt ──────────────────────────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Radios ─────────────────────────────────────────────────────────────── */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* ── Easing ─────────────────────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* ── Duraciones ─────────────────────────────────────────────────────────── */
+  --dur-instant: 120ms;
+  --dur-quick:   180ms;
+  --dur-base:    240ms;
+  --dur-slow:    400ms;
+  --dur-rule:    600ms;
+
+  /* ── Z-index escala semántica ───────────────────────────────────────────── */
+  --z-base:     0;
+  --z-sticky:   10;
+  --z-overlay:  100;
+  --z-modal:    200;
+  --z-toast:    300;
+  --z-tooltip:  400;
+}
