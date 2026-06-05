@@ -4,9 +4,15 @@ import { Toast }         from './toast'
 import { Onboarding }    from './onboarding'
 import { AlphabetLearn } from './learn'
 import { Splash }        from './splash'
+import { Tabs }          from './tabs'
+import { PanelLeft }     from './panel-left'
+import { OutputPanel }   from './output'
 import type { CargaDebug } from '../engine/types'
 
 export class RenderizadorUI {
+  private readonly panelLeft:  PanelLeft
+  private readonly tabs:       Tabs
+  private readonly output:     OutputPanel
   private readonly hud:        HUD
   private readonly debug:      DebugPanel
   private readonly toast:      Toast
@@ -15,12 +21,23 @@ export class RenderizadorUI {
   private readonly splash:     Splash
 
   constructor() {
+    // Orden importa: PanelLeft + OutputPanel crean DOM, HUD consulta IDs creados.
+    this.panelLeft  = new PanelLeft()
+    this.output     = new OutputPanel()
+    this.tabs       = new Tabs()
     this.hud        = new HUD()
     this.debug      = new DebugPanel()
     this.toast      = new Toast()
     this.onboarding = new Onboarding()
     this.learn      = new AlphabetLearn()
     this.splash     = new Splash()
+
+    // Puente HUD → OutputPanel via custom events
+    window.addEventListener('yoso:letra', (e) => {
+      const detail = (e as CustomEvent<{ letra: string; borrar: boolean }>).detail
+      this.output.agregarLetra(detail.letra, detail.borrar)
+    })
+    window.addEventListener('yoso:texto-clear', () => this.output.limpiarTexto())
   }
 
   // ── Splash / empty state ──────────────────────────────────────────────────
@@ -33,9 +50,13 @@ export class RenderizadorUI {
   ocultarEstadoVacio(): void                                    { this.splash.ocultarEstadoVacio() }
 
   // ── HUD / predicción / texto traducido ────────────────────────────────────
-  estadoListo(estado: 'idle' | 'signing' | 'warning'): void    { this.hud.estadoListo(estado) }
+  estadoListo(estado: 'idle' | 'signing' | 'warning'): void {
+    this.hud.estadoListo(estado)
+    this.panelLeft.setLive(estado !== 'idle')
+  }
   actualizarPrediccion(letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
     this.hud.actualizarPrediccion(letra, confianza, latencia, esIzquierda)
+    this.output.setLetra(letra)
   }
   estadoMano(estado: string, esOptimo: boolean): void           { this.hud.estadoMano(estado, esOptimo) }
   limpiarMano(): void                                           { this.hud.limpiarMano() }
@@ -46,7 +67,10 @@ export class RenderizadorUI {
 
   // ── Debug ─────────────────────────────────────────────────────────────────
   actualizarDebug(p: CargaDebug): void                          { this.debug.actualizar(p) }
-  actualizarPerfFrame(mpMs: number, fps: number): void          { this.debug.actualizarPerf(mpMs, fps) }
+  actualizarPerfFrame(mpMs: number, fps: number): void          {
+    this.debug.actualizarPerf(mpMs, fps)
+    this.hud.actualizarFps(fps)
+  }
 
   // ── Toast ─────────────────────────────────────────────────────────────────
   mostrarToast(id: string, msg: string, tipo: 'info' | 'warn' | 'error' = 'info', dur = 5000): void {
@@ -60,4 +84,9 @@ export class RenderizadorUI {
   // ── Aprendizaje ───────────────────────────────────────────────────────────
   resaltarSena(letra: string): void                             { this.learn.resaltar(letra) }
   limpiarSena(): void                                           { this.learn.limpiar() }
+
+  // ── Tabs (uso interno futuro) ─────────────────────────────────────────────
+  cambiarTab(modo: 'traductor' | 'entrenamiento' | 'aprendizaje'): void {
+    this.tabs.activar(modo)
+  }
 }
