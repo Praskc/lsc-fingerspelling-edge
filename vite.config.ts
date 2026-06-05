@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
-import { copyFile, mkdir } from 'node:fs/promises'
+import { copyFile, mkdir, readFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 
 const COOP_HEADERS = {
@@ -41,6 +41,36 @@ const copiaAssetsSelfHosted: Plugin = {
   }
 }
 
+// En `pnpm dev` no corre `copiaAssetsSelfHosted` (solo `apply: 'build'`), así que
+// sin esto el browser pide /ort/*.mjs y /mediapipe/* contra el dev server y obtiene
+// 404. Middleware que los lee directo de node_modules y los sirve. Solo en dev.
+const sirveAssetsSelfHostedDev: Plugin = {
+  name: 'sirve-assets-self-hosted-dev',
+  apply: 'serve',
+  configureServer(server) {
+    const mapa = new Map(ASSETS_SELF_HOSTED.map(([src, dest]) => ['/' + dest, src]))
+    server.middlewares.use(async (req, res, next) => {
+      const ruta = (req.url ?? '').split('?')[0]
+      const src = mapa.get(ruta)
+      if (!src) { next(); return }
+      try {
+        const buf = await readFile(resolve(process.cwd(), src))
+        const ext = ruta.split('.').pop() ?? ''
+        const ct = ext === 'wasm'
+          ? 'application/wasm'
+          : ext === 'mjs' || ext === 'js'
+            ? 'application/javascript'
+            : 'application/octet-stream'
+        res.setHeader('Content-Type', ct)
+        res.setHeader('Cache-Control', 'no-cache')
+        res.end(buf)
+      } catch (e) {
+        next(e as Error)
+      }
+    })
+  }
+}
+
 // Excluye los .wasm que Rollup bundlea espontáneamente (variantes JSEP/asyncify
 // que no usamos). Solo queremos los WASM copiados explícitamente arriba.
 const excluirWasmRollup: Plugin = {
@@ -58,7 +88,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['onnxruntime-web', '@mediapipe/tasks-vision']
   },
-  plugins: [copiaAssetsSelfHosted],
+  plugins: [copiaAssetsSelfHosted, sirveAssetsSelfHostedDev],
   build: {
     target:    'es2022',
     minify:    'terser',
