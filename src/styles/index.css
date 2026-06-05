@@ -26,3 +26,4 @@
 /* Overlays */
 @import './overlays/splash.css';
 @import './overlays/onboarding.css';
+@import './overlays/empty-state.css';
