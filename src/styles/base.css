@@ -1,0 +1,22 @@
+/* ============================================================================
+   BASE · body, defaults tipográficos
+   ============================================================================ */
+
+html, body {
+  background: var(--bg-base);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100dvh;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg-base);
+}

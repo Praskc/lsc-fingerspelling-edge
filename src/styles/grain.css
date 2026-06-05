@@ -1,0 +1,17 @@
+/* ============================================================================
+   GRAIN · Capa de textura sutil sobre fondos
+   Aplicada a contenedores que lleven .has-grain.
+   ============================================================================ */
+
+.has-grain { position: relative; }
+
+.has-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: var(--z-base);
+}
