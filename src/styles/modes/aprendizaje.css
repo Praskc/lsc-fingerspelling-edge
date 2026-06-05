@@ -1,0 +1,46 @@
+/* ============================================================================
+   MODO APRENDIZAJE · Grid 5×6 del alfabeto LSC
+   Ver spec §5.6.
+   ============================================================================ */
+
+#tab-aprendizaje.tab-panel { gap: var(--space-5); }
+#tab-aprendizaje .output-section {
+  padding: var(--space-6) var(--space-8);
+  gap: var(--space-5);
+}
+
+.alphabet-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+  margin-top: var(--space-4);
+}
+
+.alphabet-cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid var(--border-soft);
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 36;
+  font-size: 22px;
+  color: var(--ink-faint);
+  transition: background var(--dur-instant) var(--ease-out),
+              color var(--dur-instant) var(--ease-out),
+              border-color var(--dur-instant) var(--ease-out);
+}
+.alphabet-cell[data-state="seen"] {
+  background: var(--surface);
+  color: var(--ink-mid);
+}
+.alphabet-cell[data-state="active"] {
+  background: var(--surface-hi);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .alphabet-grid { grid-template-columns: repeat(7, 1fr); }
+  .alphabet-cell { font-size: 18px; }
+}
