@@ -1,0 +1,40 @@
+/* ============================================================================
+   LAYOUT · Shell principal y grid responsive
+   Ver spec §5.1 (estructura) y §5.8 (breakpoints).
+   ============================================================================ */
+
+#app-shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+  background: var(--bg-base);
+}
+
+#workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 0;
+}
+
+#panel-left, #panel-right {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Tablet 641 a 1024px */
+@media (min-width: 641px) {
+  #workspace {
+    grid-template-columns: 1.2fr 1fr;
+  }
+  #panel-left {
+    border-right: 1px solid var(--border);
+  }
+}
+
+/* Desktop a partir de 1025px */
+@media (min-width: 1025px) {
+  #workspace {
+    grid-template-columns: 1.3fr 1fr;
+  }
+}
