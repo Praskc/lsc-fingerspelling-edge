@@ -18,3 +18,5 @@
 @import './components/wordmark.css';
 @import './components/video.css';
 @import './components/hud.css';
+@import './components/output.css';
+@import './components/buffer.css';

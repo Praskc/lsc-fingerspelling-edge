@@ -1,0 +1,48 @@
+/* ============================================================================
+   BUFFER · Indicador de buffer de votación (9 bloques) o progreso de nivel (12)
+   Ver spec §5.4 (Traductor) y §5.5 (Entrenamiento).
+   ============================================================================ */
+
+.buffer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-soft);
+}
+
+.buffer__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.buffer__label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-sm);
+  letter-spacing: 0.25em;
+  color: var(--ink-low);
+  text-transform: uppercase;
+}
+
+.buffer__count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-lg);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.buffer__count .denom { color: var(--ink-low); }
+
+.buffer__bar {
+  display: flex;
+  gap: 3px;
+}
+.buffer__block {
+  flex: 1;
+  height: 8px;
+  background: var(--border);
+  transition: background var(--dur-instant) var(--ease-out);
+}
+.buffer__block[data-filled="true"] { background: var(--accent); }
+.buffer__block[data-filled="partial"] { background: var(--accent); opacity: 0.7; }
