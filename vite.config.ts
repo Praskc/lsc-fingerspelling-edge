@@ -2,6 +2,10 @@ import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
 import { copyFile, mkdir, readFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
+import { gzip as gzipCb } from 'node:zlib'
+import { promisify } from 'node:util'
+
+const gzip = promisify(gzipCb)
 
 const COOP_HEADERS = {
   'Cross-Origin-Opener-Policy':  'same-origin',
@@ -62,11 +66,20 @@ const sirveAssetsSelfHostedDev: Plugin = {
             ? 'application/javascript'
             : 'application/octet-stream'
         res.setHeader('Content-Type', ct)
-        res.setHeader('Cache-Control', 'no-cache')
+        // Cache agresivo: estos vienen de node_modules, son inmutables hasta que
+        // el usuario haga pnpm install de otra versión.
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
         // COOP/COEP requeridos para SharedArrayBuffer (intraOpNumThreads de ORT)
         for (const [k, v] of Object.entries(COOP_HEADERS)) res.setHeader(k, v)
         res.setHeader('Cross-Origin-Resource-Policy', 'same-origin')
-        res.end(buf)
+        const aceptaGzip = (req.headers['accept-encoding'] ?? '').toString().includes('gzip')
+        if (aceptaGzip) {
+          const comprimido = await gzip(buf)
+          res.setHeader('Content-Encoding', 'gzip')
+          res.end(comprimido)
+        } else {
+          res.end(buf)
+        }
       } catch (e) {
         next(e as Error)
       }
