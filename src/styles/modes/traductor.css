@@ -1,0 +1,24 @@
+/* ============================================================================
+   MODO TRADUCTOR · Layout del panel derecho
+   Estructura: eyebrow + output + buffer + signature
+   Ver spec §5.4.
+   ============================================================================ */
+
+#tab-traductor.tab-panel { gap: var(--space-5); }
+#tab-traductor .output-section {
+  padding: var(--space-6) var(--space-8);
+  gap: var(--space-5);
+}
+
+@media (max-width: 640px) {
+  #tab-traductor .output-section {
+    padding: var(--space-5) var(--space-4);
+  }
+  #tab-traductor .output-body {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  #tab-traductor .output-letter {
+    margin-top: 0;
+  }
+}

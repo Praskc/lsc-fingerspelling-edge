@@ -29,3 +29,6 @@
 @import './overlays/empty-state.css';
 @import './overlays/toast.css';
 @import './overlays/debug.css';
+
+/* Modos */
+@import './modes/traductor.css';
