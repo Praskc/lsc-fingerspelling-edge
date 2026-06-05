@@ -1,0 +1,54 @@
+/* ============================================================================
+   HUD · Display de instrumento de 4 bloques
+   Ver spec §5.3.3.
+   ============================================================================ */
+
+.hud {
+  margin: var(--space-4) var(--space-6) var(--space-5);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+}
+
+.hud__block {
+  padding: var(--space-3) var(--space-4);
+  border-right: 1px solid var(--border-soft);
+  min-width: 0;
+}
+.hud__block:last-child { border-right: none; }
+
+.hud__label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xs);
+  letter-spacing: 0.25em;
+  color: var(--ink-low);
+  text-transform: uppercase;
+}
+
+.hud__value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-2xl);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1;
+  margin-top: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud__value .unit {
+  font-size: var(--fs-mono-md);
+  color: var(--ink-low);
+  margin-left: 3px;
+}
+
+.hud__value[data-state="high"] { color: var(--accent); }
+.hud__value[data-state="off"] { color: var(--ink-faint); }
+
+/* Mobile: 3 bloques (sin FPS) */
+@media (max-width: 640px) {
+  .hud { grid-template-columns: repeat(3, 1fr); margin: var(--space-3) var(--space-4); }
+  .hud__block { padding: var(--space-2) var(--space-3); }
+  .hud__value { font-size: var(--fs-mono-xl); }
+  .hud__block--fps { display: none; }
+}
