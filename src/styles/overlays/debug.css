@@ -1,0 +1,71 @@
+/* ============================================================================
+   DEBUG · Overlay técnico oculto en prod
+   Solo visible con Shift+D o ?debug=1. Ver spec §6.5.
+   ============================================================================ */
+
+#debug-panel {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: var(--z-tooltip);
+  width: 320px;
+  max-height: 420px;
+  padding: var(--space-4);
+  background: oklch(0.18 0.005 70 / 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--ink-mid);
+  overflow: auto;
+}
+#debug-panel[hidden] { display: none; }
+
+.debug-grid {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.dr {
+  display: grid;
+  grid-template-columns: 70px 1fr 50px;
+  align-items: center;
+  gap: var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.dl { color: var(--ink-low); letter-spacing: 0.05em; }
+.dv { color: var(--ink); text-align: right; }
+
+.dbw {
+  background: var(--border);
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.db {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent);
+  transition: width var(--dur-instant) var(--ease-out);
+}
+
+.debug-buffer {
+  display: flex;
+  gap: 2px;
+}
+.debug-buffer span {
+  width: 12px;
+  height: 4px;
+  background: var(--border);
+}
+.debug-buffer span[data-active="true"] { background: var(--accent); }
+
+.debug-top3 {
+  font-family: var(--font-mono);
+  color: var(--ink);
+  letter-spacing: 0.05em;
+}

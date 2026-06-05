@@ -27,3 +27,5 @@
 @import './overlays/splash.css';
 @import './overlays/onboarding.css';
 @import './overlays/empty-state.css';
+@import './overlays/toast.css';
+@import './overlays/debug.css';

@@ -1,0 +1,54 @@
+/* ============================================================================
+   TOAST · Notificaciones discretas
+   Ver spec §6.4.
+   ============================================================================ */
+
+#toast-root {
+  position: fixed;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  min-width: 260px;
+  max-width: 420px;
+  pointer-events: auto;
+  animation: toast-in var(--dur-base) var(--ease-out);
+}
+.toast.is-leaving {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity var(--dur-quick) var(--ease-out),
+              transform var(--dur-quick) var(--ease-out);
+}
+
+.toast__eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xs);
+  letter-spacing: 0.22em;
+  color: var(--ink-low);
+  text-transform: uppercase;
+}
+
+.toast__msg {
+  font-family: var(--font-ui);
+  font-size: var(--fs-ui-md);
+  color: var(--ink);
+}
+
+.toast[data-type="error"] .toast__eyebrow { color: var(--cd-rojo); }
+.toast[data-type="warn"]  .toast__eyebrow { color: var(--cd-amarillo); }
