@@ -1,0 +1,47 @@
+/* ============================================================================
+   SIGNATURE · Firma editorial Esteban Cotera (intocable, ver memoria)
+   Ver spec §5.4 footer block.
+   ============================================================================ */
+
+.signature {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.signature__author {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.signature__eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xs);
+  letter-spacing: 0.28em;
+  color: var(--ink-low);
+  text-transform: uppercase;
+}
+
+.signature__name {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  font-variation-settings: 'opsz' 72;
+  font-size: var(--fs-italic-md);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.signature__link {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-md);
+  letter-spacing: 0.22em;
+  color: var(--ink-mid);
+  text-decoration: none;
+  transition: color var(--dur-instant) var(--ease-out);
+}
+.signature__link:hover { color: var(--accent); }
