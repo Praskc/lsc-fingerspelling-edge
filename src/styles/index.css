@@ -12,3 +12,6 @@
 
 /* Layout */
 @import './layout.css';
+
+/* Componentes */
+@import './components/tabs.css';

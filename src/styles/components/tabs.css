@@ -1,0 +1,108 @@
+/* ============================================================================
+   TABS · Banda de 3 cards editoriales (índice)
+   Ver spec §5.2.
+   ============================================================================ */
+
+#tabs-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-base);
+}
+
+.tab-card {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-right: 1px solid var(--border-soft);
+  background: transparent;
+  position: relative;
+  transition: background var(--dur-instant) var(--ease-out);
+  text-align: left;
+  cursor: pointer;
+  min-height: 60px;
+}
+.tab-card:last-child { border-right: none; }
+.tab-card:hover { background: var(--surface); }
+.tab-card:active { transform: scale(0.99); }
+
+.tab-card[aria-selected="true"] {
+  background: var(--surface);
+}
+.tab-card[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: var(--accent);
+}
+
+.tab-number {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xl);
+  letter-spacing: -0.02em;
+  color: var(--ink-low);
+  line-height: 1;
+}
+.tab-card[aria-selected="true"] .tab-number { color: var(--accent); }
+
+.tab-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.15;
+}
+.tab-name {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--fs-ui-lg);
+  letter-spacing: -0.015em;
+  color: var(--ink-mid);
+}
+.tab-card[aria-selected="true"] .tab-name { color: var(--ink); }
+
+.tab-sub {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xs);
+  letter-spacing: 0.22em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+/* Mobile: sticky bottom, sin subtítulo */
+@media (max-width: 640px) {
+  #tabs-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--bg-deep);
+  }
+  .tab-card {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    min-height: 64px;
+  }
+  .tab-sub { display: none; }
+  .tab-card[aria-selected="true"]::after {
+    inset: 0 0 auto 0;
+    bottom: auto;
+    top: 0;
+  }
+}
+
+/* Cambio de panel derecho cuando cambia tab */
+.tab-panel {
+  display: none;
+}
+.tab-panel.active {
+  display: flex;
+  flex-direction: column;
+  animation: backdrop-in var(--dur-base) var(--ease-in-out);
+}
