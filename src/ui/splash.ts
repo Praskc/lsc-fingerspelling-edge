@@ -1,77 +1,54 @@
+// ============================================================================
+// SPLASH · Pantalla de carga editorial
+// Mantiene API: mensaje(), ocultar(), ocultarSkeleton(),
+// mostrarEstadoVacio(), ocultarEstadoVacio().
+// ============================================================================
+
 export class Splash {
-  private readonly elSplash:     HTMLElement
-  private readonly elMsg:        HTMLElement
-  private readonly elVacio:      HTMLElement
-  private readonly elTitulo:     HTMLElement
-  private readonly elDesc:       HTMLElement
-  private readonly elReintentar: HTMLElement
+  private root: HTMLElement | null
+  private status: HTMLElement | null = null
+  private emptyEl: HTMLElement | null = null
 
   constructor() {
-    this.elSplash     = document.getElementById('splash-screen')!
-    this.elMsg        = document.getElementById('splash-msg')!
-    this.elVacio      = document.getElementById('empty-state')!
-    this.elTitulo     = document.getElementById('es-title')!
-    this.elDesc       = document.getElementById('es-desc')!
-    this.elReintentar = document.getElementById('es-retry')!
+    this.root = document.getElementById('splash-screen')
+    if (this.root) {
+      this.status = this.root.querySelector('.splash-status')
+    }
   }
 
-  mensaje(texto: string, esError = false): void {
-    this.elMsg.textContent = texto
-    this.elMsg.classList.toggle('splash-error', esError)
+  mensaje(msg: string, esError = false): void {
+    if (!this.status) return
+    this.status.textContent = msg
+    this.status.dataset.error = String(esError)
   }
 
   ocultar(): void {
-    this.elSplash.classList.add('splash-hidden')
+    if (!this.root) return
+    this.root.classList.add('is-hidden')
+    const root = this.root
+    setTimeout(() => { root.style.display = 'none' }, 400)
   }
 
   ocultarSkeleton(): void {
-    document.getElementById('canvas-skeleton')?.classList.add('skeleton-oculto')
+    const sk = document.getElementById('canvas-skeleton')
+    if (sk) sk.remove()
   }
 
-  mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void, bloqueado = false): void {
-    const esMobil = matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0
-
-    const mensajePermiso: [string, string] = bloqueado ? [
-      'Cámara bloqueada',
-      esMobil
-        ? 'Toca el candado junto a la URL, entra a Permisos del sitio > Cámara > Permitir, y recarga.'
-        : 'Haz clic en el candado de la barra de dirección, entra a Permisos del sitio > Cámara > Permitir.'
-    ] : [
-      'Se necesita acceso a la cámara',
-      'Pulsa "Permitir" cuando el navegador lo solicite para que YOSO pueda detectar tus señas.'
-    ]
-
-    const mensajes: Record<string, [string, string]> = {
-      NotAllowedError:       mensajePermiso,
-      PermissionDeniedError: mensajePermiso,
-      NotFoundError:    ['No se detectó ninguna cámara',   'Conecta una cámara a tu dispositivo e inténtalo de nuevo.'],
-      NotReadableError: ['La cámara está en uso', 'Otra aplicación está usando la cámara. Ciérrala y vuelve a intentarlo.'],
-      AbortError:       ['La cámara está en uso', 'Otra aplicación está usando la cámara. Ciérrala y vuelve a intentarlo.'],
+  mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void, _bloqueado = false): void {
+    this.emptyEl = document.getElementById('empty-state')
+    if (!this.emptyEl) return
+    this.emptyEl.hidden = false
+    const title = this.emptyEl.querySelector<HTMLElement>('.empty-state__title')
+    if (title && err?.name === 'NotAllowedError') {
+      title.textContent = 'YOSO necesita permiso para acceder a tu cámara.'
     }
-
-    const [titulo, desc] = mensajes[err?.name ?? ''] ?? [
-      'No se pudo acceder a la cámara',
-      'Verifica que tu dispositivo tenga cámara y que el navegador tenga permiso para usarla.'
-    ]
-
-    this.elTitulo.textContent = titulo
-    this.elDesc.textContent   = desc
-
-    if (bloqueado) {
-      this.elReintentar.textContent = 'Recargar página'
-      this.elReintentar.onclick = () => location.reload()
-    } else {
-      this.elReintentar.textContent = 'Reintentar'
-      this.elReintentar.onclick = () => {
-        this.ocultarEstadoVacio()
-        onReintentar()
-      }
+    const retry = this.emptyEl.querySelector<HTMLButtonElement>('#es-retry')
+    if (retry) {
+      retry.onclick = onReintentar
     }
-
-    this.elVacio.removeAttribute('hidden')
   }
 
   ocultarEstadoVacio(): void {
-    this.elVacio.setAttribute('hidden', '')
+    if (this.emptyEl) this.emptyEl.hidden = true
   }
 }
