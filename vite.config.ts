@@ -63,6 +63,9 @@ const sirveAssetsSelfHostedDev: Plugin = {
             : 'application/octet-stream'
         res.setHeader('Content-Type', ct)
         res.setHeader('Cache-Control', 'no-cache')
+        // COOP/COEP requeridos para SharedArrayBuffer (intraOpNumThreads de ORT)
+        for (const [k, v] of Object.entries(COOP_HEADERS)) res.setHeader(k, v)
+        res.setHeader('Cross-Origin-Resource-Policy', 'same-origin')
         res.end(buf)
       } catch (e) {
         next(e as Error)
