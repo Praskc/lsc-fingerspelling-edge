@@ -11,7 +11,6 @@ export class OutputPanel {
   private bufferBar: HTMLElement | null = null
   private bufferCount: HTMLElement | null = null
   private letras: string[] = []
-  private palabraActual = ''
   private letraActual = '_'
 
   constructor() {
@@ -82,7 +81,6 @@ export class OutputPanel {
 
   limpiarTexto(): void {
     this.letras = []
-    this.palabraActual = ''
     this.renderText()
   }
 
@@ -94,10 +92,8 @@ export class OutputPanel {
       const isLast = i === partes.length - 1
       return isLast ? this.escape(p) : `<span class="word">${this.escape(p)}</span>`
     })
-    const ultima = partes[partes.length - 1] ?? ''
     const html = palabras.join(' ') + `<span class="caret">|</span>`
     this.textEl.innerHTML = html
-    this.palabraActual = ultima
   }
 
   completarPalabra(): void {
