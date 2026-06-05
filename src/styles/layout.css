@@ -16,10 +16,18 @@
   min-height: 0;
 }
 
-#panel-left, #panel-right {
+#panel-left {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+#panel-right {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 /* Tablet 641 a 1024px */

@@ -27,8 +27,10 @@ export class Tabs {
     this.bar.innerHTML = MODOS.map(m => {
       const meta = META[m]
       const selected = m === this.actual
+      // Doble clase y doble dataset: tab-card para mi controller, mode-tab + data-tab
+      // para que app.ts (_vincularEventos) lo siga conectando al cambio de modo del motor.
       return `
-        <button class="tab-card" data-modo="${m}" role="tab" aria-selected="${selected}">
+        <button class="tab-card mode-tab" data-modo="${m}" data-tab="${m}" role="tab" aria-selected="${selected}">
           <span class="tab-number">${meta.numero}</span>
           <span class="tab-text">
             <span class="tab-name">${meta.nombre}</span>

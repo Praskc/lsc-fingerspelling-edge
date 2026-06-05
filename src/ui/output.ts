@@ -11,7 +11,7 @@ export class OutputPanel {
   private bufferBar: HTMLElement | null = null
   private bufferCount: HTMLElement | null = null
   private letras: string[] = []
-  private letraActual = '_'
+  private letraActual = '·'
 
   constructor() {
     this.root = document.getElementById('tab-traductor')
@@ -30,7 +30,7 @@ export class OutputPanel {
         <p class="output-eyebrow">→ DETECTANDO</p>
 
         <div class="output-body">
-          <div class="output-letter" id="prediction" aria-live="polite">_</div>
+          <div class="output-letter" id="prediction" aria-live="polite">·</div>
           <div class="output-text-block">
             <p class="output-label">TEXTO</p>
             <p class="output-text" id="final-text" aria-live="polite"><span class="caret">|</span></p>
@@ -60,13 +60,14 @@ export class OutputPanel {
 
   setLetra(letra: string): void {
     if (!this.letterEl) return
-    if (letra === this.letraActual) return
+    const display = letra || '·'
+    if (display === this.letraActual) return
     this.letterEl.dataset.changing = 'true'
     const el = this.letterEl
     setTimeout(() => {
-      el.textContent = letra || '_'
+      el.textContent = display
       el.dataset.changing = 'false'
-      this.letraActual = letra
+      this.letraActual = display
     }, 180)
   }
 

@@ -46,13 +46,16 @@ export class RenderizadorUI {
   ocultarSkeleton(): void                                       { this.splash.ocultarSkeleton() }
   mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void, bloqueado = false): void {
     this.splash.mostrarEstadoVacio(err, onReintentar, bloqueado)
+    this.panelLeft.setLive(false)
   }
   ocultarEstadoVacio(): void                                    { this.splash.ocultarEstadoVacio() }
 
   // ── HUD / predicción / texto traducido ────────────────────────────────────
   estadoListo(estado: 'idle' | 'signing' | 'warning'): void {
     this.hud.estadoListo(estado)
-    this.panelLeft.setLive(estado !== 'idle')
+    // El motor está activo en cualquiera de los 3 estados (idle = esperando seña).
+    // Solo se apaga si falla la cámara, ver mostrarEstadoVacio.
+    this.panelLeft.setLive(true)
   }
   actualizarPrediccion(letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
     this.hud.actualizarPrediccion(letra, confianza, latencia, esIzquierda)
