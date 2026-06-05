@@ -1,0 +1,73 @@
+/* ============================================================================
+   WORDMARK · YOSO + slogan italic + indicador EN VIVO
+   Ver spec §5.3.1.
+   ============================================================================ */
+
+.panel-header {
+  padding: var(--space-5) var(--space-6) var(--space-3);
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-md);
+  letter-spacing: 0.28em;
+}
+
+.panel-header__eyebrow {
+  color: var(--ink-low);
+}
+
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--accent);
+  letter-spacing: 0.18em;
+}
+.live-indicator::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.live-indicator[data-state="off"] {
+  color: var(--ink-faint);
+}
+.live-indicator[data-state="off"]::before {
+  background: var(--ink-faint);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variation-settings: 'opsz' 144, 'WONK' 1, 'SOFT' 0;
+  font-size: var(--fs-wordmark-mobile);
+  line-height: 0.85;
+  letter-spacing: -0.06em;
+  color: var(--ink);
+  margin-top: var(--space-2);
+  margin-bottom: 0;
+}
+
+.wordmark-slogan {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 400;
+  font-variation-settings: 'opsz' 36;
+  font-size: var(--fs-italic-sm);
+  color: var(--ink-mid);
+  margin: var(--space-1) 0 0;
+}
+
+@media (min-width: 641px) {
+  .wordmark { font-size: var(--fs-wordmark-tablet); }
+}
+@media (min-width: 1025px) {
+  .wordmark { font-size: var(--fs-wordmark-desktop); }
+}
