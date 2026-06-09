@@ -1,0 +1,64 @@
+/* ============================================================================
+   SITE FOOTER · Firma global del autor, una sola vez en toda la página.
+   Sustituye a la firma duplicada en los 3 paneles.
+   ============================================================================ */
+
+#site-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  background: var(--bg-deep);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xs);
+  letter-spacing: 0.22em;
+  color: var(--ink-low);
+  text-transform: uppercase;
+}
+
+#site-footer .site-footer__meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#site-footer .site-footer__sig {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  text-transform: none;
+  letter-spacing: 0.05em;
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: var(--fs-ui-sm);
+  color: var(--ink-mid);
+}
+#site-footer .site-footer__sig strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+#site-footer .site-footer__link {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xs);
+  letter-spacing: 0.22em;
+  color: var(--ink-mid);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color var(--dur-instant) var(--ease-out);
+}
+#site-footer .site-footer__link:hover { color: var(--accent); }
+
+@media (max-width: 640px) {
+  #site-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-4);
+    /* En mobile los tabs son sticky bottom; el footer queda antes de ellos. */
+    padding-bottom: var(--space-4);
+  }
+  #site-footer .site-footer__meta { display: none; }
+}

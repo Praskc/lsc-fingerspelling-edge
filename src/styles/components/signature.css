@@ -5,7 +5,7 @@
 
 .signature {
   padding-top: var(--space-4);
-  border-top: 1px solid var(--border-soft);
+  border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;

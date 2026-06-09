@@ -50,5 +50,5 @@
   color: var(--ink);
 }
 
-.toast[data-type="error"] .toast__eyebrow { color: var(--cd-rojo); }
-.toast[data-type="warn"]  .toast__eyebrow { color: var(--cd-amarillo); }
+.toast[data-type="error"] .toast__eyebrow { color: var(--danger); }
+.toast[data-type="warn"]  .toast__eyebrow { color: var(--accent); }

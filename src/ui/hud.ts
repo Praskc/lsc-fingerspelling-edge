@@ -29,10 +29,12 @@ export class HUD {
   }
 
   actualizarPrediccion(letra: string, confianza: number, latencia: number, _esIzquierda: boolean): void {
-    if (this.predEl) this.predEl.textContent = letra || '_'
+    if (this.predEl) this.predEl.textContent = letra || '·'
     if (this.mConf) {
-      this.mConf.innerHTML = `${Math.round(confianza)}<span class="unit">%</span>`
-      this.mConf.dataset.state = confianza >= 90 ? 'high' : 'on'
+      // Motor entrega confianza en 0..1; mostrar como porcentaje.
+      const pct = confianza * 100
+      this.mConf.innerHTML = `${pct.toFixed(0)}<span class="unit">%</span>`
+      this.mConf.dataset.state = confianza >= 0.9 ? 'high' : 'on'
     }
     if (this.mTime) this.mTime.innerHTML = `${latencia.toFixed(1)}<span class="unit">ms</span>`
   }

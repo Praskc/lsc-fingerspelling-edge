@@ -46,14 +46,6 @@ export class OutputPanel {
             ${Array.from({ length: 9 }, () => '<span class="buffer__block"></span>').join('')}
           </div>
         </div>
-
-        <div class="signature">
-          <div class="signature__author">
-            <span class="signature__eyebrow">DEVELOPED BY</span>
-            <span class="signature__name">Esteban Cotera</span>
-          </div>
-          <a class="signature__link" href="https://github.com/Praskc" target="_blank" rel="noopener" aria-label="GitHub Praskc">@Praskc ↗</a>
-        </div>
       </section>
     `
   }

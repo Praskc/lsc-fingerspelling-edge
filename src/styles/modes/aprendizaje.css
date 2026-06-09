@@ -1,46 +1,108 @@
 /* ============================================================================
-   MODO APRENDIZAJE · Grid 5×6 del alfabeto LSC
-   Ver spec §5.6.
+   MODO APRENDIZAJE · Letra hero + tira de 28 celdas.
+   Cada celda es un placeholder reservado para una ilustración futura.
+   Ver spec §5.6 (refactor 2026-06-05).
    ============================================================================ */
 
-#tab-aprendizaje.tab-panel { gap: var(--space-5); }
-#tab-aprendizaje .output-section {
-  padding: var(--space-6) var(--space-8);
-  gap: var(--space-5);
-}
-
-.alphabet-grid {
+.learn-section {
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 3px;
-  margin-top: var(--space-4);
+  grid-template-rows: auto 1fr auto;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-8);
+  min-height: 0;
 }
 
-.alphabet-cell {
-  aspect-ratio: 1;
+.learn-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-md);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-low);
+}
+.learn-meta { color: var(--ink-faint); }
+
+.learn-hero-wrap {
   display: grid;
   place-items: center;
-  background: transparent;
-  border: 1px solid var(--border-soft);
+  min-height: 0;
+}
+.learn-hero {
   font-family: var(--font-display);
-  font-variation-settings: 'opsz' 36;
-  font-size: 22px;
-  color: var(--ink-faint);
-  transition: background var(--dur-instant) var(--ease-out),
-              color var(--dur-instant) var(--ease-out),
-              border-color var(--dur-instant) var(--ease-out);
-}
-.alphabet-cell[data-state="seen"] {
-  background: var(--surface);
-  color: var(--ink-mid);
-}
-.alphabet-cell[data-state="active"] {
-  background: var(--surface-hi);
-  color: var(--accent);
-  border-color: var(--accent);
+  font-variation-settings: 'opsz' 144, 'WONK' 1;
+  font-weight: 500;
+  font-size: clamp(160px, 30vw, 320px);
+  line-height: 0.85;
+  letter-spacing: -0.06em;
+  color: var(--ink);
+  text-transform: uppercase;
+  transition: color var(--dur-quick) var(--ease-out);
 }
 
+/* ── Tira horizontal de celdas vacías (placeholder para ilustración) ────── */
+.learn-strip {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.learn-cell {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  transition:
+    background var(--dur-instant) var(--ease-out),
+    border-color var(--dur-instant) var(--ease-out);
+}
+.learn-cell__placeholder {
+  position: absolute;
+  inset: 25%;
+  border: 1px dashed var(--border);
+  opacity: 0.5;
+}
+.learn-cell__label {
+  position: relative;
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 36;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--ink-faint);
+  z-index: 1;
+  text-transform: lowercase;
+}
+
+.learn-cell[data-state="seen"] {
+  background: var(--surface);
+}
+.learn-cell[data-state="seen"] .learn-cell__label { color: var(--ink-mid); }
+.learn-cell[data-state="seen"] .learn-cell__placeholder { border-color: var(--border-strong); }
+
+.learn-cell[data-state="active"] {
+  background: var(--surface-hi);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.learn-cell[data-state="active"] .learn-cell__label { color: var(--accent); }
+.learn-cell[data-state="active"] .learn-cell__placeholder { border-color: var(--accent); opacity: 0.7; }
+
+@media (max-width: 1024px) {
+  .learn-strip { grid-template-columns: repeat(7, 1fr); }
+}
 @media (max-width: 640px) {
-  .alphabet-grid { grid-template-columns: repeat(7, 1fr); }
-  .alphabet-cell { font-size: 18px; }
+  .learn-section { padding: var(--space-4); }
+  .learn-strip {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .learn-cell__label { font-size: 12px; }
 }

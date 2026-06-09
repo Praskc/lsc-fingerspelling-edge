@@ -13,7 +13,7 @@
 
 .hud__block {
   padding: var(--space-3) var(--space-4);
-  border-right: 1px solid var(--border-soft);
+  border-right: 1px solid var(--border);
   min-width: 0;
 }
 .hud__block:last-child { border-right: none; }

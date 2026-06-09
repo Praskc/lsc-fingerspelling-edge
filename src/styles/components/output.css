@@ -67,7 +67,8 @@
   color: var(--ink-faint);
 }
 
-/* Underline cromático Cruz-Diez sobre la última palabra confirmada */
+/* Subrayado sutil sobre la última palabra confirmada.
+   Un único color (--accent), se traza de izq a der al completarse. */
 .output-text .word {
   position: relative;
   display: inline-block;
@@ -77,16 +78,10 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -3px;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    var(--cd-rojo) 0%,
-    var(--cd-amarillo) 35%,
-    var(--cd-verde) 65%,
-    var(--cd-azul) 100%
-  );
-  opacity: 0.6;
+  bottom: -2px;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.55;
   clip-path: inset(0 0 0 0);
 }
 .output-text .word.is-completing::after {

@@ -7,6 +7,8 @@ import { Splash }        from './splash'
 import { Tabs }          from './tabs'
 import { PanelLeft }     from './panel-left'
 import { OutputPanel }   from './output'
+import { GamePanel }     from './game-panel'
+import { SiteFooter }    from './site-footer'
 import type { CargaDebug } from '../engine/types'
 
 export class RenderizadorUI {
@@ -21,9 +23,12 @@ export class RenderizadorUI {
   private readonly splash:     Splash
 
   constructor() {
-    // Orden importa: PanelLeft + OutputPanel crean DOM, HUD consulta IDs creados.
+    // Orden importa: PanelLeft + OutputPanel + GamePanel + AlphabetLearn crean DOM.
+    // HUD y GameManager consultan IDs ya creados.
     this.panelLeft  = new PanelLeft()
     this.output     = new OutputPanel()
+    new GamePanel()  // solo necesita renderizar el template para que GameManager encuentre IDs
+    new SiteFooter() // firma global de autor en el footer
     this.tabs       = new Tabs()
     this.hud        = new HUD()
     this.debug      = new DebugPanel()
@@ -69,7 +74,11 @@ export class RenderizadorUI {
   limpiarTexto(): void                                          { this.hud.limpiarTexto() }
 
   // ── Debug ─────────────────────────────────────────────────────────────────
-  actualizarDebug(p: CargaDebug): void                          { this.debug.actualizar(p) }
+  actualizarDebug(p: CargaDebug): void                          {
+    this.debug.actualizar(p)
+    // Buffer voting visible al usuario: número de votos acumulados, máximo 9.
+    this.output.setBuffer(p.bufferActual.length, 9)
+  }
   actualizarPerfFrame(mpMs: number, fps: number): void          {
     this.debug.actualizarPerf(mpMs, fps)
     this.hud.actualizarFps(fps)

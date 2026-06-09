@@ -1,72 +1,71 @@
 // ============================================================================
-// LEARN · Grid 5×6 del alfabeto LSC
-// Mantiene API: resaltar(letra), limpiar()
-// Acumula clases vistas en la sesión para que las celdas conserven estado "seen".
+// LEARN · Modo Aprendizaje.
+// Hero = letra detectada gigante. Debajo, tira horizontal con las 28 clases
+// del alfabeto LSC; cada celda es un placeholder vacío reservado para una
+// ilustración futura del diseñador gráfico.
+// Mantiene API: resaltar(letra), limpiar().
 // ============================================================================
 
 const ALFABETO: string[] = [
-  'A','B','C','D','E','F',
-  'G','H','I','J','K','L',
-  'M','N','Ñ','O','P','Q',
-  'R','S','T','U','V','W',
-  'X','Y','Z',
+  'A','B','C','D','E','F','G','H','I','J','K','L','M','N',
+  'Ñ','O','P','Q','R','S','T','U','V','W','X','Y','Z',
 ]
 
 export class AlphabetLearn {
-  private root: HTMLElement | null = null
+  private gridEl: HTMLElement | null = null
+  private heroEl: HTMLElement | null = null
   private vistas = new Set<string>()
   private actual: string | null = null
 
   constructor() {
-    queueMicrotask(() => this.render())
+    this.render()
   }
 
   private render(): void {
     const panel = document.getElementById('tab-aprendizaje')
     if (!panel) return
     panel.innerHTML = `
-      <section class="output-section">
-        <p class="output-eyebrow">→ EXPLORA EL ALFABETO LSC</p>
-        <div class="output-body">
-          <div class="output-letter" id="learn-letter">_</div>
-          <div class="output-text-block">
-            <p class="output-label">ALFABETO</p>
-            <div class="alphabet-grid" id="alphabet-grid">
-              ${ALFABETO.map(l => `<span class="alphabet-cell" data-letter="${l}">${l.toLowerCase()}</span>`).join('')}
-            </div>
-          </div>
+      <section class="learn-section">
+        <header class="learn-head">
+          <span class="learn-eyebrow">SEÑA DETECTADA</span>
+          <span class="learn-meta">28 LETRAS LSC</span>
+        </header>
+
+        <div class="learn-hero-wrap">
+          <div id="learn-hero" class="learn-hero">·</div>
         </div>
-        <div class="signature">
-          <div class="signature__author">
-            <span class="signature__eyebrow">DEVELOPED BY</span>
-            <span class="signature__name">Esteban Cotera</span>
-          </div>
-          <a class="signature__link" href="https://github.com/Praskc" target="_blank" rel="noopener">@Praskc ↗</a>
+
+        <div class="learn-strip" id="alphabet-grid" role="list">
+          ${ALFABETO.map(l => `
+            <span class="learn-cell" data-letter="${l}" role="listitem" aria-label="Letra ${l}">
+              <span class="learn-cell__label">${l.toLowerCase()}</span>
+              <span class="learn-cell__placeholder" aria-hidden="true"></span>
+            </span>
+          `).join('')}
         </div>
       </section>
     `
-    this.root = document.getElementById('alphabet-grid')
+    this.gridEl = document.getElementById('alphabet-grid')
+    this.heroEl = document.getElementById('learn-hero')
   }
 
   resaltar(letra: string): void {
-    if (!this.root) return
+    if (!this.gridEl) return
     if (letra) this.vistas.add(letra.toUpperCase())
     this.actual = letra ? letra.toUpperCase() : null
     this.repaint()
-    const learnLetter = document.getElementById('learn-letter')
-    if (learnLetter) learnLetter.textContent = letra || '_'
+    if (this.heroEl) this.heroEl.textContent = letra || '·'
   }
 
   limpiar(): void {
     this.actual = null
     this.repaint()
-    const learnLetter = document.getElementById('learn-letter')
-    if (learnLetter) learnLetter.textContent = '_'
+    if (this.heroEl) this.heroEl.textContent = '·'
   }
 
   private repaint(): void {
-    if (!this.root) return
-    this.root.querySelectorAll<HTMLElement>('.alphabet-cell').forEach(cell => {
+    if (!this.gridEl) return
+    this.gridEl.querySelectorAll<HTMLElement>('.learn-cell').forEach(cell => {
       const l = cell.dataset.letter!
       if (l === this.actual) {
         cell.dataset.state = 'active'

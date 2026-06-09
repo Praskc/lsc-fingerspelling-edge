@@ -4,32 +4,38 @@
    ============================================================================ */
 
 :root {
-  /* ── Superficies oscuras tinted cálidas (OKLCH) ─────────────────────────── */
-  --bg-deep:    oklch(0.13 0.005 70);
-  --bg-base:    oklch(0.16 0.005 70);
-  --surface:    oklch(0.22 0.006 70);
-  --surface-hi: oklch(0.28 0.008 70);
+  /* ── Superficies oscuras tinted cálidas (OKLCH).
+        Diferencia mayor entre niveles para que la jerarquía se sienta sin
+        depender de bordes marcados. ─────────────────────────────────────── */
+  --bg-deep:    oklch(0.11 0.004 70);
+  --bg-base:    oklch(0.15 0.005 70);
+  --surface:    oklch(0.20 0.006 70);
+  --surface-hi: oklch(0.26 0.008 70);
 
-  /* ── Bordes (3 niveles) ─────────────────────────────────────────────────── */
-  --border-soft: oklch(0.28 0.008 70);
-  --border:      oklch(0.34 0.010 70);
-  --border-hi:   oklch(0.42 0.012 70);
+  /* ── Bordes (solo 2 niveles, sutiles).
+        Para separar capas usar background-shift + sombra, no border-color. ─ */
+  --border:        oklch(0.30 0.008 70);
+  --border-strong: oklch(0.42 0.012 70);
+
+  /* ── Sombras semánticas (elevación, no decoración) ──────────────────── */
+  --shadow-sm: 0 1px 0 0 oklch(0.08 0.005 70 / 0.4);
+  --shadow-md: 0 4px 12px -2px oklch(0.06 0.004 70 / 0.5);
+  --shadow-lg: 0 8px 24px -4px oklch(0.04 0.004 70 / 0.55);
+  --shadow-inset: inset 0 0 0 1px oklch(0 0 0 / 0.5), inset 0 0 24px oklch(0 0 0 / 0.3);
 
   /* ── Texto (5 niveles) ──────────────────────────────────────────────────── */
-  --ink:       oklch(0.88 0.012 70);
-  --ink-mid:   oklch(0.72 0.012 70);
-  --ink-low:   oklch(0.56 0.012 70);
+  --ink:       oklch(0.90 0.012 70);
+  --ink-mid:   oklch(0.74 0.012 70);
+  --ink-low:   oklch(0.58 0.012 70);
   --ink-faint: oklch(0.42 0.012 70);
-  --ink-ghost: oklch(0.32 0.010 70);
+  --ink-ghost: oklch(0.30 0.010 70);
 
-  /* ── Acentos Cruz-Diez (uso restringido, ver spec §4.2) ─────────────────── */
-  --cd-rojo:     oklch(0.55 0.16 25);
-  --cd-amarillo: oklch(0.78 0.13 80);
-  --cd-verde:    oklch(0.55 0.12 155);
-  --cd-azul:     oklch(0.50 0.13 250);
-
-  /* ── Estado activo (terracota) ──────────────────────────────────────────── */
-  --accent: oklch(0.62 0.13 35);
+  /* ── Único acento (terracota).
+        Reemplazó la paleta Cruz-Diez. Cualquier color saturado en la UI
+        debe venir de este token, nunca de hex literal. ──────────────────── */
+  --accent:        oklch(0.62 0.13 35);
+  --accent-strong: oklch(0.55 0.16 35);
+  --danger:        oklch(0.55 0.16 25);
 
   /* ── Tipografía: stacks ─────────────────────────────────────────────────── */
   --font-display: 'Fraunces', Georgia, 'Source Serif Pro', serif;

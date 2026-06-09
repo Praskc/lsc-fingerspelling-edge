@@ -23,12 +23,12 @@ a { color: inherit; }
 /* Scrollbar discreta */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--border-hi) transparent;
+  scrollbar-color: var(--border-strong) transparent;
 }
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
-  background: var(--border-hi);
+  background: var(--border-strong);
   border-radius: var(--radius-sm);
 }
 

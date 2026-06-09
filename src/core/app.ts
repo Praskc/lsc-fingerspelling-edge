@@ -49,8 +49,10 @@ export class YOSOApp {
 
   constructor() {
     this.motor  = new MotorInferencia()
-    this.juego  = new GameManager()
+    // UI primero: crea los IDs (letra-objetivo, puntuacion, etc.) que GameManager
+    // consulta en su constructor.
     this.ui     = new RenderizadorUI()
+    this.juego  = new GameManager()
 
     this.video  = document.querySelector('.input_video')!
     this.canvas = document.querySelector('.output_canvas')!
