@@ -6,10 +6,16 @@ const STREAM_W   = 300
 const STREAM_H   = 130
 const STREAM_MAX = 150  // ~5s a 30fps
 
+// Coordenadas X precalculadas: solo dependen del índice, no del valor.
+const STREAM_XS: string[] = Array.from(
+  { length: STREAM_MAX },
+  (_, i) => ((i / (STREAM_MAX - 1)) * STREAM_W).toFixed(1)
+)
+
 export class OutputPanel {
   private letterEl:    HTMLElement | null = null
   private textEl:      HTMLElement | null = null
-  private bufferBar:   HTMLElement | null = null
+  private bufferCells: HTMLElement[] = []
   private bufferCount: HTMLElement | null = null
   private streamLine:  SVGPathElement | null = null
   private streamArea:  SVGPathElement | null = null
@@ -21,6 +27,7 @@ export class OutputPanel {
   private bufferPrev = 0
   private bufferHoldTimer = 0
   private streamBuf: number[] = []
+  private streamSum = 0
 
   constructor() {
     const root = document.getElementById('tab-traductor')
@@ -28,7 +35,7 @@ export class OutputPanel {
     this.render(root)
     this.letterEl    = document.getElementById('prediction')
     this.textEl      = document.getElementById('final-text')
-    this.bufferBar   = root.querySelector('.buffer-block__bar')
+    this.bufferCells = Array.from(root.querySelectorAll<HTMLElement>('.buffer-block__cell'))
     this.bufferCount = root.querySelector('.buffer-block__count')
     this.streamLine  = document.getElementById('stream-line') as SVGPathElement | null
     this.streamArea  = document.getElementById('stream-area') as SVGPathElement | null
@@ -170,7 +177,7 @@ export class OutputPanel {
   }
 
   setBuffer(activos: number, total = 9): void {
-    if (!this.bufferBar || !this.bufferCount) return
+    if (this.bufferCells.length === 0 || !this.bufferCount) return
     if (activos < this.bufferPrev) {
       clearTimeout(this.bufferHoldTimer)
       this.bufferHoldTimer = window.setTimeout(() => {
@@ -180,14 +187,14 @@ export class OutputPanel {
       return
     }
     clearTimeout(this.bufferHoldTimer)
+    if (activos === this.bufferPrev) return
     this.bufferPrev = activos
     this.applyBuffer(activos, total)
   }
 
   private applyBuffer(activos: number, total: number): void {
-    if (!this.bufferBar || !this.bufferCount) return
-    const cells = this.bufferBar.querySelectorAll<HTMLElement>('.buffer-block__cell')
-    cells.forEach((c, i) => {
+    if (!this.bufferCount) return
+    this.bufferCells.forEach((c, i) => {
       if (i < activos - 1) {
         c.dataset.on = 'true'
       } else if (i === activos - 1 && activos > 0) {
@@ -201,33 +208,34 @@ export class OutputPanel {
 
   actualizarStream(confianza: number): void {
     this.streamBuf.push(confianza)
-    if (this.streamBuf.length > STREAM_MAX) this.streamBuf.shift()
+    this.streamSum += confianza
+    if (this.streamBuf.length > STREAM_MAX) {
+      this.streamSum -= this.streamBuf.shift()!
+    }
     this.renderStream()
   }
 
   private renderStream(): void {
     const buf = this.streamBuf
-    if (buf.length < 2 || !this.streamLine || !this.streamArea || !this.streamDot) return
-
     const n = buf.length
-    const pts = buf.map((c, i) => {
-      const x = (i / (STREAM_MAX - 1)) * STREAM_W
-      const y = STREAM_H * (1 - c)
-      return `${x.toFixed(1)},${y.toFixed(1)}`
-    })
+    if (n < 2 || !this.streamLine || !this.streamArea || !this.streamDot) return
 
-    const xLast = ((n - 1) / (STREAM_MAX - 1)) * STREAM_W
-    const yLast = STREAM_H * (1 - buf[n - 1])
+    let d = 'M'
+    for (let i = 0; i < n; i++) {
+      if (i > 0) d += 'L'
+      d += STREAM_XS[i] + ',' + (STREAM_H * (1 - buf[i])).toFixed(1)
+    }
 
-    const linePath = `M${pts.join('L')}`
-    this.streamLine.setAttribute('d', linePath)
-    this.streamArea.setAttribute('d', `${linePath}L${xLast.toFixed(1)},${STREAM_H}L0,${STREAM_H}Z`)
-    this.streamDot.setAttribute('cx', xLast.toFixed(1))
-    this.streamDot.setAttribute('cy', yLast.toFixed(1))
+    const xLast = STREAM_XS[n - 1]
+    const yLast = (STREAM_H * (1 - buf[n - 1])).toFixed(1)
+
+    this.streamLine.setAttribute('d', d)
+    this.streamArea.setAttribute('d', `${d}L${xLast},${STREAM_H}L0,${STREAM_H}Z`)
+    this.streamDot.setAttribute('cx', xLast)
+    this.streamDot.setAttribute('cy', yLast)
 
     if (this.streamAvg) {
-      const avg = buf.reduce((a, b) => a + b, 0) / n
-      this.streamAvg.innerHTML = `avg ${Math.round(avg * 100)}<span class="unit">%</span>`
+      this.streamAvg.innerHTML = `avg ${Math.round((this.streamSum / n) * 100)}<span class="unit">%</span>`
     }
   }
 
