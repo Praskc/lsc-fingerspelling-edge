@@ -1,13 +1,11 @@
 /* ============================================================================
-   YOSO v2 · Sistema de estilos modular
-   Cargado desde index.html. Ver docs/superpowers/specs/2026-06-05-rediseno-frontend-design.md
+   YOSO v3 · Sistema de estilos modular
    ============================================================================ */
 
 /* Fundación */
 @import './tokens.css';
 @import './reset.css';
 @import './base.css';
-@import './grain.css';
 @import './motion.css';
 
 /* Layout */
@@ -15,13 +13,11 @@
 
 /* Componentes */
 @import './components/tabs.css';
-@import './components/wordmark.css';
 @import './components/video.css';
 @import './components/hud.css';
 @import './components/output.css';
 @import './components/buffer.css';
 @import './components/signature.css';
-@import './components/site-footer.css';
 @import './components/button.css';
 
 /* Overlays */

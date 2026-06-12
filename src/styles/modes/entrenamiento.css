@@ -1,169 +1,350 @@
 /* ============================================================================
-   MODO ENTRENAMIENTO · La palabra es el hero, stats en la cabecera,
-   feedback abajo. Layout propio, distinto del Traductor a propósito.
-   Ver spec §5.5.
+   MODO ENTRENAMIENTO · sidebar v9 (hero + guide + atlas) + v8 (historial)
    ============================================================================ */
 
-.game-section {
-  flex: 1;
-  display: grid;
-  grid-template-rows: auto 1fr auto auto;
-  gap: var(--space-6);
-  padding: var(--space-6) var(--space-8);
-  min-height: 0;
+#tab-entrenamiento {
+  animation: view-enter 220ms var(--ease-out);
 }
+#tab-entrenamiento > * {
+  animation: block-enter 220ms var(--ease-out) backwards;
+}
+#tab-entrenamiento > *:nth-child(1) { animation-delay: 0ms; }
+#tab-entrenamiento > *:nth-child(2) { animation-delay: 40ms; }
+#tab-entrenamiento > *:nth-child(3) { animation-delay: 80ms; }
+#tab-entrenamiento > *:nth-child(4) { animation-delay: 120ms; }
 
-/* ── Cabecera: eyebrow a la izquierda, stats a la derecha ───────────────── */
-.game-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-4);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border);
-}
-.game-eyebrow {
-  font-family: var(--font-mono);
-  font-size: var(--fs-mono-md);
-  letter-spacing: 0.28em;
-  color: var(--ink-low);
-  text-transform: uppercase;
-}
+/* Stats: NIVEL · PUNTOS · RACHA */
 .game-stats {
-  display: flex;
-  gap: var(--space-6);
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--bg-deep);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
-.game-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
+.game-stat { padding: 16px 20px; }
+.game-stat:not(:last-child) { box-shadow: 1px 0 0 0 var(--bg-base); }
 .game-stat__label {
-  font-size: var(--fs-mono-xs);
-  letter-spacing: 0.28em;
-  color: var(--ink-low);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  color: var(--ink-mid);
   text-transform: uppercase;
 }
 .game-stat__value {
-  font-size: var(--fs-mono-lg);
-  letter-spacing: -0.01em;
+  font-family: var(--font-brand);
+  font-variation-settings: 'opsz' 48, 'wght' 700;
+  font-size: 22px;
+  margin-top: 4px;
   color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
   line-height: 1;
 }
-.game-stat__value.score-bump {
-  color: var(--accent);
-  animation: backdrop-in 600ms var(--ease-out);
-}
 
-/* ── La palabra como hero ──────────────────────────────────────────────── */
-.game-word-wrap {
-  display: grid;
-  place-items: center;
-  min-height: 0;
-}
-.game-word {
-  font-family: var(--font-display);
-  font-variation-settings: 'opsz' 144, 'WONK' 1;
-  font-weight: 600;
-  font-size: clamp(72px, 14vw, 180px);
-  line-height: 0.9;
-  letter-spacing: -0.05em;
-  color: var(--ink);
-  display: flex;
-  gap: 0.04em;
-  text-align: center;
-  text-wrap: balance;
-}
-.game-word .gw-done    { color: var(--ink-low); }
-.game-word .gw-current {
-  color: var(--accent);
-  position: relative;
-}
-.game-word .gw-current::after {
-  content: '';
-  position: absolute;
-  left: 6%;
-  right: 6%;
-  bottom: -0.08em;
-  height: 3px;
-  background: var(--accent);
-  border-radius: 1px;
-}
-.game-word .gw-pending { color: var(--ink-ghost); }
-
-/* ── Hint slot (imagen-pista) ─────────────────────────────────────────── */
-.game-hint-slot {
-  display: grid;
-  place-items: center;
-  min-height: 0;
-}
-.imagen-pista {
-  display: none;
-  width: 160px;
-  max-width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+/* Hero: palabra a deletrear */
+.word-card {
+  padding: 22px 24px;
   background: var(--bg-deep);
-  padding: var(--space-2);
-  box-shadow: var(--shadow-sm);
-}
-.imagen-pista.visible { display: block; }
-
-/* ── Footer del juego: feedback + progreso ──────────────────────────── */
-.game-foot {
+  border-radius: var(--radius);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border);
+  gap: 14px;
 }
-.game-feedback {
+.word-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.word-card__label {
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-md);
-  letter-spacing: 0.18em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  color: var(--ink-mid);
   text-transform: uppercase;
-  line-height: 1.5;
-  min-height: 1.5em;
-  transition: color var(--dur-instant) var(--ease-out);
 }
-.game-feedback.fb-idle    { color: var(--ink-mid); }
-.game-feedback.fb-success { color: var(--accent); }
-.game-feedback.fb-error   { color: var(--danger); }
-.game-feedback.fb-warn    { color: var(--accent); }
-
-.game-progress {
-  display: grid;
-  grid-template-columns: 1fr auto;
+.word-card__source {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--ink-sub);
+  text-transform: lowercase;
 }
-.game-progress__bar {
-  height: 4px;
-  background: var(--surface);
+.word-card__source-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px dashed var(--ink-faint);
+  border-radius: 3px;
+  color: var(--ink-faint);
+  font-size: 7px;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+
+/* Palabra grande con slots por estado */
+.word {
+  display: flex;
+  gap: 4px;
+  font-family: var(--font-brand);
+  font-variation-settings: 'opsz' 96, 'wght' 700;
+  font-size: clamp(48px, 7vw, 68px);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+/* Ocultar imagen de pista (game.ts la gestiona con .visible pero no queremos mostrarla aún) */
+#imagen-pista { display: none !important; }
+
+/* Spans creados por game.ts: gw-done / gw-current / gw-pending */
+@keyframes letra-ok {
+  0%   { color: var(--accent); text-shadow: 0 0 18px var(--accent), 0 0 40px var(--accent); transform: scale(1.15); }
+  60%  { color: var(--accent); text-shadow: 0 0 8px var(--accent); transform: scale(1.05); }
+  100% { color: oklch(0.38 0 0); text-shadow: none; transform: scale(1); }
+}
+
+#letra-objetivo span {
+  position: relative;
+  display: inline-block;
+  min-width: 0.6em;
+  text-align: center;
+}
+#letra-objetivo .gw-done {
+  color: oklch(0.38 0 0);
+  animation: letra-ok 500ms var(--ease-out) forwards;
+}
+#letra-objetivo .gw-current {
+  color: var(--accent);
+  text-shadow: 0 0 12px var(--accent);
+}
+#letra-objetivo .gw-current::after {
+  content: '';
+  position: absolute;
+  left: 5%; right: 5%; bottom: -8px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: blink 1s steps(2) infinite;
+}
+#letra-objetivo .gw-pending { color: var(--ink-ghost); }
+
+/* Intentos */
+.attempts {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--bg-base);
+}
+.attempts__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--ink-mid);
+  text-transform: uppercase;
+}
+.attempts__dots { display: inline-flex; gap: 5px; }
+.attempts__dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--bg-base);
+  border: 1px solid var(--ink-ghost);
+  transition: background 200ms var(--ease-out), border-color 200ms var(--ease-out);
+}
+.attempts__dot[data-on="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+}
+.attempts__hint {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: var(--ink-sub);
+  text-transform: lowercase;
+  text-align: right;
+}
+
+/* Progreso del nivel */
+.word-card__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bg-base);
+}
+.word-card__progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--ink-mid);
+  text-transform: uppercase;
+}
+.word-card__progress-bar {
+  height: 5px;
+  background: var(--bg-base);
+  border-radius: 1px;
   overflow: hidden;
 }
-.game-progress__fill {
+.word-card__progress-fill {
   height: 100%;
-  width: 0%;
   background: var(--accent);
-  transition: width var(--dur-base) var(--ease-out);
+  box-shadow: 0 0 4px var(--accent);
+  transition: width 240ms var(--ease-out);
 }
-.game-progress__count {
+.word-card__progress-count {
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-sm);
-  letter-spacing: 0.22em;
-  color: var(--ink-low);
-  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
+.word-card__progress-count .denom { color: var(--ink-sub); }
 
-@media (max-width: 640px) {
-  .game-section {
-    padding: var(--space-4) var(--space-4);
-    gap: var(--space-4);
-  }
-  .game-stats { gap: var(--space-4); }
+/* Feedback — game.ts setea className="game-feedback fb-{tipo}" y textContent */
+.game-feedback {
+  padding: 14px 20px;
+  background: var(--bg-deep);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mid);
+  transition: color 200ms var(--ease-out), background 200ms var(--ease-out);
 }
+.game-feedback::before {
+  content: '';
+  flex-shrink: 0;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--ink-mid);
+  transition: background 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
+}
+.game-feedback.fb-success {
+  color: var(--success);
+  animation: block-enter 200ms var(--ease-out);
+}
+.game-feedback.fb-success::before {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+.game-feedback.fb-error   { color: var(--danger); }
+.game-feedback.fb-error::before {
+  background: var(--danger);
+  box-shadow: 0 0 6px var(--danger);
+}
+.game-feedback.fb-warn    { color: oklch(0.78 0.13 80); }
+.game-feedback.fb-warn::before { background: oklch(0.78 0.13 80); }
+.game-feedback.fb-idle    { color: var(--ink-sub); }
+
+/* Animación puntuación al sumar */
+@keyframes score-bump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.25); color: var(--accent); }
+  100% { transform: scale(1); }
+}
+#puntuacion.score-bump { animation: score-bump 350ms var(--ease-out); }
+
+/* Constelación de niveles */
+.levels {
+  padding: 22px 24px;
+  background: var(--bg-deep);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.levels__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.levels__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  color: var(--ink-mid);
+  text-transform: uppercase;
+}
+.levels__sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--ink-sub);
+  text-transform: uppercase;
+}
+.levels__map { position: relative; height: 100px; }
+.levels__svg { width: 100%; height: 100%; display: block; }
+.lvl-line { stroke: var(--ink-ghost); stroke-width: 1; }
+.lvl-line--done { stroke: var(--accent); filter: drop-shadow(0 0 3px var(--accent)); }
+.lvl-node { stroke-width: 1; transition: all 200ms var(--ease-out); }
+.lvl-node--done { fill: var(--accent); stroke: var(--accent); filter: drop-shadow(0 0 6px var(--accent)); }
+.lvl-node--current { fill: var(--bg-deep); stroke: var(--accent); stroke-width: 2; }
+.lvl-node--current-glow { fill: var(--accent); opacity: 0.25; animation: glow-pulse 1.8s var(--ease-out) infinite; }
+.lvl-node--locked { fill: var(--bg-base); stroke: var(--ink-ghost); }
+.lvl-label { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.18em; fill: var(--ink-sub); text-anchor: middle; text-transform: uppercase; }
+.lvl-label--current { fill: var(--accent); font-weight: 600; }
+.lvl-label--locked { fill: var(--ink-ghost); }
+.lvl-count { font-family: var(--font-mono); font-size: 9px; fill: var(--ink-mid); text-anchor: middle; font-variant-numeric: tabular-nums; }
+.lvl-count--current { fill: var(--ink); font-weight: 600; }
+.lvl-count--locked { fill: var(--ink-faint); }
+
+/* Historial de palabras de la sesión (v8) */
+.history {
+  padding: 16px 20px;
+  background: var(--bg-deep);
+  border-radius: var(--radius);
+}
+.history__head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.history__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  color: var(--ink-mid);
+  text-transform: uppercase;
+}
+.history__count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-mid);
+  font-variant-numeric: tabular-nums;
+}
+.history__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+.history__word {
+  font-family: var(--font-brand);
+  font-variation-settings: 'opsz' 24, 'wght' 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--ink-mid);
+  text-transform: lowercase;
+}
+.history__word--latest { color: var(--accent); }

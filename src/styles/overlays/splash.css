@@ -1,6 +1,5 @@
 /* ============================================================================
-   SPLASH · Pantalla de carga editorial
-   Ver spec §6.1.
+   SPLASH · Pantalla de carga con entrada escalonada
    ============================================================================ */
 
 #splash-screen {
@@ -10,11 +9,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-base);
-  transition: opacity var(--dur-slow) var(--ease-out);
+  background: var(--bg-deeper);
+  transition: opacity var(--dur-slow) var(--ease-out),
+              transform var(--dur-slow) var(--ease-out);
 }
 #splash-screen.is-hidden {
   opacity: 0;
+  transform: scale(1.015);
   pointer-events: none;
 }
 
@@ -22,49 +23,82 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-6);
+  gap: 0;
   text-align: center;
 }
 
+/* Status: aparece primero */
 .splash-status {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-md);
-  letter-spacing: 0.25em;
-  color: var(--ink-low);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  color: var(--ink-sub);
   text-transform: uppercase;
+  margin-bottom: 36px;
+  animation: splash-fade-up var(--dur-base) var(--ease-out) 0ms both;
 }
 .splash-status::before {
   content: '';
-  width: 6px;
-  height: 6px;
+  width: 6px; height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  animation: backdrop-in 1s var(--ease-in-out) infinite alternate;
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 1.6s var(--ease-out) infinite;
+  flex-shrink: 0;
+}
+.splash-status[data-error="true"] { color: var(--danger); }
+.splash-status[data-error="true"]::before {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+  animation: none;
 }
 
+/* Wordmark: el plato fuerte */
 .splash-wordmark {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-variation-settings: 'opsz' 144, 'WONK' 1;
-  font-size: clamp(96px, 18vw, 160px);
-  line-height: 0.85;
-  letter-spacing: -0.06em;
+  font-family: var(--font-brand);
+  font-variation-settings: 'opsz' 96, 'wght' 800;
+  font-size: clamp(88px, 16vw, 148px);
+  line-height: 0.88;
+  letter-spacing: -0.055em;
   color: var(--ink);
+  animation: splash-wordmark-in 480ms var(--ease-out) 60ms both;
 }
 
+/* Slogan */
 .splash-slogan {
-  font-family: var(--font-italic);
+  font-family: var(--font-brand);
+  font-variation-settings: 'opsz' 48, 'wght' 400;
   font-style: italic;
-  font-size: var(--fs-italic-md);
-  color: var(--ink-mid);
+  font-size: 17px;
+  color: var(--ink-sub);
+  margin-top: 22px;
+  animation: splash-fade-up var(--dur-base) var(--ease-out) 160ms both;
 }
 
+/* Meta */
 .splash-meta {
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-sm);
-  letter-spacing: 0.28em;
+  font-size: 9.5px;
+  letter-spacing: 0.32em;
   color: var(--ink-faint);
+  margin-top: 12px;
+  animation: splash-fade-up var(--dur-base) var(--ease-out) 220ms both;
+}
+
+/* Keyframes */
+@keyframes splash-wordmark-in {
+  from { opacity: 0; transform: translateY(16px) scaleY(0.96); }
+  to   { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-status,
+  .splash-wordmark,
+  .splash-slogan,
+  .splash-meta { animation: none; }
+  #splash-screen { transition: opacity 160ms linear; }
 }

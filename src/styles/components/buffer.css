@@ -1,48 +1,56 @@
 /* ============================================================================
-   BUFFER · Indicador de buffer de votación (9 bloques) o progreso de nivel (12)
-   Ver spec §5.4 (Traductor) y §5.5 (Entrenamiento).
+   BUFFER BLOCK · Indicador de 9 votos (sidebar traductor)
    ============================================================================ */
 
-.buffer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border);
+.buffer-block {
+  padding: 16px 24px;
+  background: var(--bg-deep);
+  border-radius: 2px 2px var(--radius) var(--radius);
 }
 
-.buffer__head {
+.buffer-block__head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  margin-bottom: 10px;
 }
 
-.buffer__label {
+.buffer-block__label {
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-sm);
-  letter-spacing: 0.25em;
-  color: var(--ink-low);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  color: var(--ink-mid);
   text-transform: uppercase;
 }
 
-.buffer__count {
+.buffer-block__count {
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-lg);
-  letter-spacing: -0.01em;
+  font-size: 15px;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.buffer__count .denom { color: var(--ink-low); }
+.buffer-block__count .denom { color: var(--ink-sub); }
 
-.buffer__bar {
+.buffer-block__bar {
   display: flex;
   gap: 3px;
+  height: 7px;
 }
-.buffer__block {
+
+.buffer-block__cell {
   flex: 1;
-  height: 8px;
-  background: var(--border);
-  transition: background var(--dur-instant) var(--ease-out);
+  background: var(--bg-base);
+  border-radius: 1px;
+  transition: background 300ms var(--ease-out),
+              box-shadow 300ms var(--ease-out),
+              opacity     300ms var(--ease-out);
 }
-.buffer__block[data-filled="true"] { background: var(--accent); }
-.buffer__block[data-filled="partial"] { background: var(--accent); opacity: 0.7; }
+.buffer-block__cell[data-on="true"] {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.buffer-block__cell[data-on="partial"] {
+  background: var(--accent);
+  opacity: 0.5;
+}

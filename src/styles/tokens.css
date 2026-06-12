@@ -1,104 +1,62 @@
 /* ============================================================================
-   TOKENS · Variables de diseño YOSO v2
-   Ver spec §4.2 (paleta), §4.3 (tipografía), §4.4 (espaciado), §4.5 (motion).
+   TOKENS · YOSO v3 — paleta neutral gris OKLCH + teal
+   Bricolage Grotesque / Geist / Geist Mono
    ============================================================================ */
 
 :root {
-  /* ── Superficies oscuras tinted cálidas (OKLCH).
-        Diferencia mayor entre niveles para que la jerarquía se sienta sin
-        depender de bordes marcados. ─────────────────────────────────────── */
-  --bg-deep:    oklch(0.11 0.004 70);
-  --bg-base:    oklch(0.15 0.005 70);
-  --surface:    oklch(0.20 0.006 70);
-  --surface-hi: oklch(0.26 0.008 70);
+  /* Superficies */
+  --bg-base:    oklch(0.27 0 0);
+  --bg-deep:    oklch(0.21 0 0);
+  --bg-deeper:  oklch(0.17 0 0);
+  --surface:    oklch(0.32 0 0);
+  --surface-hi: oklch(0.38 0 0);
 
-  /* ── Bordes (solo 2 niveles, sutiles).
-        Para separar capas usar background-shift + sombra, no border-color. ─ */
-  --border:        oklch(0.30 0.008 70);
-  --border-strong: oklch(0.42 0.012 70);
+  /* Bordes */
+  --border:        oklch(0.32 0 0);
+  --border-strong: oklch(0.45 0 0);
+  --border-soft:   oklch(0.28 0 0);
 
-  /* ── Sombras semánticas (elevación, no decoración) ──────────────────── */
-  --shadow-sm: 0 1px 0 0 oklch(0.08 0.005 70 / 0.4);
-  --shadow-md: 0 4px 12px -2px oklch(0.06 0.004 70 / 0.5);
-  --shadow-lg: 0 8px 24px -4px oklch(0.04 0.004 70 / 0.55);
-  --shadow-inset: inset 0 0 0 1px oklch(0 0 0 / 0.5), inset 0 0 24px oklch(0 0 0 / 0.3);
+  /* Texto */
+  --ink:       oklch(0.92 0.005 100);
+  --ink-mid:   oklch(0.78 0 0);
+  --ink-sub:   oklch(0.66 0 0);
+  --ink-low:   oklch(0.55 0 0);
+  --ink-faint: oklch(0.42 0 0);
+  --ink-ghost: oklch(0.32 0 0);
 
-  /* ── Texto (5 niveles) ──────────────────────────────────────────────────── */
-  --ink:       oklch(0.90 0.012 70);
-  --ink-mid:   oklch(0.74 0.012 70);
-  --ink-low:   oklch(0.58 0.012 70);
-  --ink-faint: oklch(0.42 0.012 70);
-  --ink-ghost: oklch(0.30 0.010 70);
+  /* Acento teal */
+  --accent:        oklch(0.74 0.14 195);
+  --accent-strong: oklch(0.64 0.17 195);
+  --accent-dim:    oklch(0.45 0.07 195);
 
-  /* ── Único acento (terracota).
-        Reemplazó la paleta Cruz-Diez. Cualquier color saturado en la UI
-        debe venir de este token, nunca de hex literal. ──────────────────── */
-  --accent:        oklch(0.62 0.13 35);
-  --accent-strong: oklch(0.55 0.16 35);
-  --danger:        oklch(0.55 0.16 25);
+  /* Estados */
+  --success: oklch(0.74 0.14 145);
+  --danger:  oklch(0.62 0.18 25);
 
-  /* ── Tipografía: stacks ─────────────────────────────────────────────────── */
-  --font-display: 'Fraunces', Georgia, 'Source Serif Pro', serif;
-  --font-output:  'Fraunces', Georgia, 'Source Serif Pro', serif;
-  --font-italic:  'Fraunces', Georgia, serif;
-  --font-ui:      'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono:    'Departure Mono', 'JetBrains Mono', ui-monospace, monospace;
+  /* Tipografía */
+  --font-brand:   'Bricolage Grotesque', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-ui:      'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono:    'Geist Mono', ui-monospace, monospace;
 
-  /* ── Tipografía: tamaños semánticos ─────────────────────────────────────── */
-  --fs-mono-xs:   9px;
-  --fs-mono-sm:   10px;
-  --fs-mono-md:   11px;
-  --fs-mono-lg:   18px;
-  --fs-mono-xl:   22px;
-  --fs-mono-2xl:  26px;
-  --fs-ui-xs:     11px;
-  --fs-ui-sm:     12px;
-  --fs-ui-md:     13px;
-  --fs-ui-lg:     15px;
-  --fs-output:    26px;
-  --fs-italic-sm: 18px;
-  --fs-italic-md: 22px;
-  --fs-wordmark-mobile:  64px;
-  --fs-wordmark-tablet:  88px;
-  --fs-wordmark-desktop: 120px;
-  --fs-dropcap-mobile:   96px;
-  --fs-dropcap-tablet:   160px;
-  --fs-dropcap-desktop:  220px;
-
-  /* ── Espaciado 4pt ──────────────────────────────────────────────────────── */
-  --space-1:  4px;
-  --space-2:  8px;
-  --space-3:  12px;
-  --space-4:  16px;
-  --space-5:  20px;
-  --space-6:  24px;
-  --space-8:  32px;
-  --space-10: 40px;
-  --space-12: 48px;
-  --space-16: 64px;
-
-  /* ── Radios ─────────────────────────────────────────────────────────────── */
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-
-  /* ── Easing ─────────────────────────────────────────────────────────────── */
+  /* Easing */
   --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
-  /* ── Duraciones ─────────────────────────────────────────────────────────── */
+  /* Spacing */
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;
+  --space-4: 16px;  --space-5: 20px;  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius: 6px;
+
+  --z-sticky:  10;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+
   --dur-instant: 120ms;
-  --dur-quick:   180ms;
+  --dur-quick:   160ms;
   --dur-base:    240ms;
   --dur-slow:    400ms;
-  --dur-rule:    600ms;
-
-  /* ── Z-index escala semántica ───────────────────────────────────────────── */
-  --z-base:     0;
-  --z-sticky:   10;
-  --z-overlay:  100;
-  --z-modal:    200;
-  --z-toast:    300;
-  --z-tooltip:  400;
 }

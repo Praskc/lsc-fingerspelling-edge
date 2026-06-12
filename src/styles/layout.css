@@ -1,48 +1,38 @@
 /* ============================================================================
-   LAYOUT · Shell principal y grid responsive
-   Ver spec §5.1 (estructura) y §5.8 (breakpoints).
+   LAYOUT · App shell v3 (topbar + main split + footer)
    ============================================================================ */
 
-#app-shell {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+#app {
   min-height: 100dvh;
-  background: var(--bg-base);
-}
-
-#workspace {
-  display: grid;
-  grid-template-columns: 1fr;
-  min-height: 0;
-}
-
-#panel-left {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  min-width: 0;
-  min-height: 0;
 }
 
-#panel-right {
+/* ── Main: feed izquierdo fijo + sidebar derecho variable ─────────── */
+#app-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 440px;
+  gap: 20px;
+  padding: 0 28px 28px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: start;
+}
+
+#feed-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+#sidebar-col {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 0;
 }
 
-/* Tablet 641 a 1024px */
-@media (min-width: 641px) {
-  #workspace {
-    grid-template-columns: 1.2fr 1fr;
-  }
-  #panel-left {
-    border-right: 1px solid var(--border);
-  }
-}
-
-/* Desktop a partir de 1025px */
-@media (min-width: 1025px) {
-  #workspace {
-    grid-template-columns: 1.3fr 1fr;
-  }
-}
+.sidebar { display: none; flex-direction: column; gap: 16px; }
+.sidebar.active { display: flex; }

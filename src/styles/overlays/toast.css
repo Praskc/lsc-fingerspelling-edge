@@ -1,54 +1,76 @@
 /* ============================================================================
-   TOAST · Notificaciones discretas
-   Ver spec §6.4.
+   TOAST · Notificaciones con indicador de tipo y jerarquía clara
    ============================================================================ */
 
 #toast-root {
   position: fixed;
-  top: var(--space-4);
+  top: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 8px;
   pointer-events: none;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 32px));
 }
 
 .toast {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--space-3) var(--space-4);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--ink);
-  min-width: 260px;
-  max-width: 420px;
+  gap: 6px;
+  padding: 14px 18px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
   pointer-events: auto;
   animation: toast-in var(--dur-base) var(--ease-out);
+  min-width: 280px;
 }
 .toast.is-leaving {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-6px) scale(0.98);
   transition: opacity var(--dur-quick) var(--ease-out),
               transform var(--dur-quick) var(--ease-out);
 }
 
+/* Eyebrow: dot + label */
 .toast__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-xs);
-  letter-spacing: 0.22em;
-  color: var(--ink-low);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  color: var(--ink-sub);
   text-transform: uppercase;
 }
-
-.toast__msg {
-  font-family: var(--font-ui);
-  font-size: var(--fs-ui-md);
-  color: var(--ink);
+.toast__eyebrow::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-sub);
 }
 
-.toast[data-type="error"] .toast__eyebrow { color: var(--danger); }
-.toast[data-type="warn"]  .toast__eyebrow { color: var(--accent); }
+/* Mensaje alineado con el texto del eyebrow */
+.toast__msg {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+  padding-left: 14px;
+}
+
+/* Variantes por tipo */
+.toast[data-type="info"] .toast__eyebrow            { color: var(--accent); }
+.toast[data-type="info"] .toast__eyebrow::before    { background: var(--accent); box-shadow: 0 0 6px var(--accent-dim); }
+
+.toast[data-type="warn"] .toast__eyebrow            { color: oklch(0.78 0.13 80); }
+.toast[data-type="warn"] .toast__eyebrow::before    { background: oklch(0.78 0.13 80); box-shadow: 0 0 6px oklch(0.78 0.13 80 / 0.5); }
+
+.toast[data-type="error"] .toast__eyebrow           { color: var(--danger); }
+.toast[data-type="error"] .toast__eyebrow::before   { background: var(--danger); box-shadow: 0 0 6px oklch(0.62 0.18 25 / 0.5); }

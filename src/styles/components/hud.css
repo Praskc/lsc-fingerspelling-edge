@@ -1,54 +1,114 @@
 /* ============================================================================
-   HUD · Display de instrumento de 4 bloques
-   Ver spec §5.3.3.
+   DETECTION · Card de letra detectada + arco de confianza (sidebar traductor)
    ============================================================================ */
 
-.hud {
-  margin: var(--space-4) var(--space-6) var(--space-5);
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.detection {
+  padding: 20px 24px;
   background: var(--bg-deep);
-  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 2px 2px;
+  display: grid;
+  grid-template-columns: 1fr 132px;
+  gap: 22px;
+  align-items: center;
 }
 
-.hud__block {
-  padding: var(--space-3) var(--space-4);
-  border-right: 1px solid var(--border);
-  min-width: 0;
+.detection__letter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-.hud__block:last-child { border-right: none; }
-
-.hud__label {
+.detection__label {
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-xs);
-  letter-spacing: 0.25em;
-  color: var(--ink-low);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  color: var(--ink-mid);
   text-transform: uppercase;
 }
-
-.hud__value {
+.detection__value {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 96, 'wght' 700;
+  font-size: 112px;
+  line-height: 0.82;
+  letter-spacing: -0.06em;
+  color: var(--accent);
+  transition: opacity var(--dur-quick) var(--ease-out),
+              transform var(--dur-quick) var(--ease-out);
+}
+.detection__value[data-changing="true"] {
+  opacity: 0;
+  transform: scale(0.95);
+}
+.detection__sub {
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-2xl);
-  letter-spacing: -0.02em;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--ink-mid);
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.detection__sub::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Arco de confianza */
+.confidence-arc {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+}
+.confidence-arc__svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.confidence-arc__track {
+  fill: none;
+  stroke: var(--bg-base);
+  stroke-width: 6;
+}
+.confidence-arc__fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 5px var(--accent));
+  transition: stroke-dashoffset var(--dur-base) var(--ease-out);
+}
+.confidence-arc__center {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.confidence-arc__pct {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 32px;
   color: var(--ink);
-  line-height: 1;
-  margin-top: var(--space-1);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
 }
-
-.hud__value .unit {
-  font-size: var(--fs-mono-md);
-  color: var(--ink-low);
-  margin-left: 3px;
+.confidence-arc__pct .unit {
+  font-size: 14px;
+  color: var(--ink-sub);
+  margin-left: 1px;
 }
-
-.hud__value[data-state="high"] { color: var(--accent); }
-.hud__value[data-state="off"] { color: var(--ink-faint); }
-
-/* Mobile: 3 bloques (sin FPS) */
-@media (max-width: 640px) {
-  .hud { grid-template-columns: repeat(3, 1fr); margin: var(--space-3) var(--space-4); }
-  .hud__block { padding: var(--space-2) var(--space-3); }
-  .hud__value { font-size: var(--fs-mono-xl); }
-  .hud__block--fps { display: none; }
+.confidence-arc__hint {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--ink-mid);
+  text-transform: uppercase;
 }

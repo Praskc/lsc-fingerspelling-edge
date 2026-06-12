@@ -1,29 +1,17 @@
 /* ============================================================================
-   VIDEO · Contenedor del feed con brackets sutiles en las esquinas
-   La profundidad viene de inset shadow + box-shadow, no de bordes marcados.
+   FEED · Contenedor de cámara con ROI + live badge + transcript
    ============================================================================ */
 
-.video-frame {
+.feed {
   position: relative;
-  margin: 0 var(--space-6);
-  background: var(--bg-deep);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  aspect-ratio: 16 / 10;
+  background: var(--bg-deeper);
+  border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: var(--shadow-md), var(--shadow-inset);
-  min-height: 0;
-  height: 100%;
 }
 
-@media (max-width: 640px) {
-  .video-frame {
-    aspect-ratio: 3 / 4;
-    height: auto;
-  }
-}
-
-.video-frame .input_video,
-.video-frame .output_canvas {
+.input_video,
+.output_canvas {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -31,40 +19,174 @@
   object-fit: cover;
 }
 
-.video-frame .roi-overlay {
+/* Badge EN VIVO */
+.feed__live {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px 7px 11px;
+  background: oklch(0.11 0 0 / 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+  text-transform: uppercase;
+  z-index: 3;
+  transition: opacity var(--dur-quick) var(--ease-out);
+}
+.feed__live::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  animation: pulse 1.6s var(--ease-out) infinite;
+}
+.feed__live[data-state="off"] {
+  color: var(--ink-sub);
+}
+.feed__live[data-state="off"]::before {
+  background: var(--ink-sub);
+  box-shadow: none;
+  animation: none;
+}
+
+/* ROI: zona de detección con brackets */
+.feed__roi {
+  position: absolute;
+  inset: 12% 18% 14% 18%;
+  pointer-events: none;
+  border: 1px dashed var(--accent-dim);
+  z-index: 2;
+}
+
+.feed__roi-label {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  color: var(--accent);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.feed__roi-corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--accent);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 3px var(--accent));
+}
+.feed__roi-corner--tl { top: -1px;    left: -1px;    border-right: none; border-bottom: none; }
+.feed__roi-corner--tr { top: -1px;    right: -1px;   border-left: none;  border-bottom: none; }
+.feed__roi-corner--bl { bottom: -1px; left: -1px;    border-right: none; border-top: none; }
+.feed__roi-corner--br { bottom: -1px; right: -1px;   border-left: none;  border-top: none; }
+
+/* Estado fuera de zona */
+.feed__roi[data-state="warning"] {
+  border-color: var(--danger);
+}
+.feed__roi[data-state="warning"] .feed__roi-label {
+  color: var(--danger);
+}
+.feed__roi[data-state="warning"] .feed__roi-corner {
+  border-color: var(--danger);
+  filter: drop-shadow(0 0 4px var(--danger));
+}
+
+/* Transcript debajo del feed (solo en modo traductor) */
+.transcript {
+  padding: 16px 20px;
+  background: var(--bg-deep);
+  border-radius: var(--radius);
+}
+.transcript__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.transcript__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  color: var(--ink-mid);
+  text-transform: uppercase;
+}
+.transcript__text {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 48, 'wght' 500;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  min-height: 1.4em;
+  word-break: break-word;
+}
+.transcript__caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  background: var(--accent);
+  vertical-align: -0.1em;
+  margin-left: 4px;
+  animation: blink 1s steps(2) infinite;
+}
+
+/* Empty state (sin cámara) */
+.empty-state {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 32px;
+  background: var(--bg-deeper);
+  text-align: center;
+  z-index: 5;
 }
+.empty-state[hidden] { display: none; }
 
-/* Brackets en las esquinas: 14×14, 1px, color --ink-low. Discreto. */
-.video-frame .corner {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  z-index: 2;
-  pointer-events: none;
-  opacity: 0.55;
+.empty-state__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: var(--danger);
+  text-transform: uppercase;
+  margin: 0;
 }
-.video-frame .corner::before,
-.video-frame .corner::after {
-  content: '';
-  position: absolute;
-  background: var(--ink);
+.empty-state__glyph {
+  font-family: var(--font-brand);
+  font-variation-settings: 'opsz' 96, 'wght' 700;
+  font-size: clamp(80px, 18vw, 140px);
+  line-height: 1;
+  color: var(--ink);
 }
-.video-frame .corner__tl { top: 10px;    left: 10px; }
-.video-frame .corner__tr { top: 10px;    right: 10px; }
-.video-frame .corner__bl { bottom: 10px; left: 10px; }
-.video-frame .corner__br { bottom: 10px; right: 10px; }
-
-.video-frame .corner__tl::before { top: 0;     left: 0;  width: 1px;  height: 100%; }
-.video-frame .corner__tl::after  { top: 0;     left: 0;  height: 1px; width: 100%; }
-.video-frame .corner__tr::before { top: 0;     right: 0; width: 1px;  height: 100%; }
-.video-frame .corner__tr::after  { top: 0;     right: 0; height: 1px; width: 100%; }
-.video-frame .corner__bl::before { bottom: 0;  left: 0;  width: 1px;  height: 100%; }
-.video-frame .corner__bl::after  { bottom: 0;  left: 0;  height: 1px; width: 100%; }
-.video-frame .corner__br::before { bottom: 0;  right: 0; width: 1px;  height: 100%; }
-.video-frame .corner__br::after  { bottom: 0;  right: 0; height: 1px; width: 100%; }
-
-/* Segmentos cromáticos eliminados con el refactor de la paleta. */
-.video-frame .corner .chrome { display: none; }
+.empty-state__title {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink-mid);
+  max-width: 28ch;
+  margin: 0;
+}
+.empty-state__hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+  margin: 0;
+}

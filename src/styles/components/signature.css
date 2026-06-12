@@ -1,47 +1,57 @@
 /* ============================================================================
-   SIGNATURE · Firma editorial Esteban Cotera (intocable, ver memoria)
-   Ver spec §5.4 footer block.
+   SIGNATURE · Footer pill con firma de Esteban Cotera (intocable)
    ============================================================================ */
 
-.signature {
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border);
+footer {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: var(--space-4);
+  justify-content: flex-end;
+  align-items: center;
+  padding: 14px 28px;
 }
 
-.signature__author {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.foot-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px 8px 16px;
+  background: var(--bg-deep);
+  border-radius: 999px;
 }
 
-.signature__eyebrow {
-  font-family: var(--font-mono);
-  font-size: var(--fs-mono-xs);
-  letter-spacing: 0.28em;
-  color: var(--ink-low);
-  text-transform: uppercase;
-}
-
-.signature__name {
-  font-family: var(--font-italic);
-  font-style: italic;
-  font-weight: 500;
-  font-variation-settings: 'opsz' 72;
-  font-size: var(--fs-italic-md);
-  letter-spacing: -0.015em;
+.foot-author__sig {
+  font-family: var(--font-brand);
+  font-variation-settings: 'opsz' 48, 'wght' 600;
+  font-size: 13.5px;
+  letter-spacing: -0.005em;
   color: var(--ink);
 }
-
-.signature__link {
+.foot-author__sig .lead {
   font-family: var(--font-mono);
-  font-size: var(--fs-mono-md);
-  letter-spacing: 0.22em;
+  font-weight: 500;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   color: var(--ink-mid);
-  text-decoration: none;
-  transition: color var(--dur-instant) var(--ease-out);
+  margin-right: 8px;
 }
-.signature__link:hover { color: var(--accent); }
+
+.foot-author__gh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background var(--dur-quick) var(--ease-out),
+              color var(--dur-quick) var(--ease-out),
+              transform var(--dur-quick) var(--ease-out);
+}
+.foot-author__gh:hover {
+  background: var(--accent);
+  color: var(--bg-deeper);
+  transform: translateY(-1px);
+}
+.foot-author__gh svg { width: 13px; height: 13px; }

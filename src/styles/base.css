@@ -1,5 +1,5 @@
 /* ============================================================================
-   BASE · body, defaults tipográficos
+   BASE
    ============================================================================ */
 
 html, body {
@@ -9,14 +9,11 @@ html, body {
   font-size: 14px;
   line-height: 1.5;
   min-height: 100dvh;
-}
-
-body {
-  display: flex;
-  flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 ::selection {
   background: var(--accent);
-  color: var(--bg-base);
+  color: var(--bg-deeper);
 }

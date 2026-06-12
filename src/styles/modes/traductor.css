@@ -1,24 +1,15 @@
 /* ============================================================================
-   MODO TRADUCTOR · Layout del panel derecho
-   Estructura: eyebrow + output + buffer + signature
-   Ver spec §5.4.
+   MODO TRADUCTOR · sidebar: detection + buffer + metrics + stream
+   El contenido lo renderiza output.ts.
    ============================================================================ */
 
-#tab-traductor.tab-panel { gap: var(--space-5); }
-#tab-traductor .output-section {
-  padding: var(--space-6) var(--space-8);
-  gap: var(--space-5);
+#tab-traductor {
+  animation: view-enter 220ms var(--ease-out);
 }
-
-@media (max-width: 640px) {
-  #tab-traductor .output-section {
-    padding: var(--space-5) var(--space-4);
-  }
-  #tab-traductor .output-body {
-    grid-template-columns: 1fr;
-    gap: var(--space-3);
-  }
-  #tab-traductor .output-letter {
-    margin-top: 0;
-  }
+#tab-traductor > * {
+  animation: block-enter 220ms var(--ease-out) backwards;
 }
+#tab-traductor > *:nth-child(1) { animation-delay: 0ms; }
+#tab-traductor > *:nth-child(2) { animation-delay: 40ms; }
+#tab-traductor > *:nth-child(3) { animation-delay: 80ms; }
+#tab-traductor > *:nth-child(4) { animation-delay: 120ms; }
