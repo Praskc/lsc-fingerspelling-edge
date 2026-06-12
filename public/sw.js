@@ -1,7 +1,7 @@
 // ============================================================================
 // SW.JS — Service Worker YOSO (offline-first, cache-first para assets)
 // ============================================================================
-const CACHE = 'yoso-v9'
+const CACHE = 'yoso-v11'
 
 const PRECACHE = [
   '/',
@@ -76,44 +76,12 @@ self.addEventListener('fetch', e => {
           if (res.ok) guardarEnCache(e.request, res)
           return res
         }).catch(() => {
-          // Si Google Fonts falla, devolver respuesta vacía vacía — no bloquea el render
+          // Si Google Fonts falla, devolver respuesta vacía — no bloquea el render
           return new Response('', {
             status: 200,
             headers: { 'Content-Type': 'text/css' }
           })
         })
-      })
-    )
-    return
-  }
-
-  // ── Google Storage (modelo hand_landmarker.task): cache-first ───────────
-  const esGoogleStorage = url.hostname === 'storage.googleapis.com'
-
-  if (esGoogleStorage) {
-    e.respondWith(
-      safeMatch(e.request).then(cached => {
-        if (cached) return cached
-        return fetch(e.request).then(res => {
-          if (res.ok || res.type === 'opaque') guardarEnCache(e.request, res)
-          return res
-        }).catch(() => new Response('', { status: 503 }))
-      })
-    )
-    return
-  }
-
-  // ── CDN jsDelivr: cache-first ─────────────────────────────
-  const esCDN = url.hostname.includes('cdn.jsdelivr.net')
-
-  if (esCDN) {
-    e.respondWith(
-      safeMatch(e.request).then(cached => {
-        if (cached) return cached
-        return fetch(e.request).then(res => {
-          if (res.ok || res.type === 'opaque') guardarEnCache(e.request, res)
-          return res
-        }).catch(() => new Response('', { status: 503 }))
       })
     )
     return
@@ -147,14 +115,16 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // ── Resto (JS, CSS, ONNX, WASM): cache-first ─────────────
+  // ── Resto (JS, CSS, ONNX, WASM): cache-first puro ─────────────────────────
+  // Los assets de Vite van hasheados (inmutables) y los no hasheados
+  // se invalidan subiendo la versión de CACHE en cada deploy.
   e.respondWith(
     safeMatch(e.request).then(cached => {
-      const networkFetch = fetch(e.request).then(res => {
+      if (cached) return cached
+      return fetch(e.request).then(res => {
         if (res.ok) guardarEnCache(e.request, res)
         return res
       }).catch(() => new Response('', { status: 503 }))
-      return cached ?? networkFetch
     })
   )
 })
