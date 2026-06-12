@@ -4,7 +4,6 @@ import { Toast }         from './toast'
 import { Onboarding }    from './onboarding'
 import { AlphabetLearn } from './learn'
 import { Splash }        from './splash'
-import { Tabs }          from './tabs'
 import { PanelLeft }     from './panel-left'
 import { OutputPanel }   from './output'
 import { GamePanel }     from './game-panel'
@@ -13,7 +12,6 @@ import type { CargaDebug } from '../engine/types'
 
 export class RenderizadorUI {
   private readonly panelLeft:  PanelLeft
-  private readonly tabs:       Tabs
   private readonly output:     OutputPanel
   private readonly hud:        HUD
   private readonly debug:      DebugPanel
@@ -29,7 +27,6 @@ export class RenderizadorUI {
     this.output     = new OutputPanel()
     new GamePanel()  // solo necesita renderizar el template para que GameManager encuentre IDs
     new SiteFooter() // firma global de autor en el footer
-    this.tabs       = new Tabs()
     this.hud        = new HUD()
     this.debug      = new DebugPanel()
     this.toast      = new Toast()
@@ -48,7 +45,6 @@ export class RenderizadorUI {
   // ── Splash / empty state ──────────────────────────────────────────────────
   mensajeSplash(mensaje: string, esError = false): void        { this.splash.mensaje(mensaje, esError) }
   ocultarSplash(): void                                         { this.splash.ocultar() }
-  ocultarSkeleton(): void                                       { this.splash.ocultarSkeleton() }
   mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void, bloqueado = false): void {
     this.splash.mostrarEstadoVacio(err, onReintentar, bloqueado)
     this.panelLeft.setLive(false)
@@ -65,9 +61,13 @@ export class RenderizadorUI {
   actualizarPrediccion(letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
     this.hud.actualizarPrediccion(letra, confianza, latencia, esIzquierda)
     this.output.setLetra(letra)
+    this.output.actualizarStream(confianza)
   }
   estadoMano(estado: string, esOptimo: boolean): void           { this.hud.estadoMano(estado, esOptimo) }
-  limpiarMano(): void                                           { this.hud.limpiarMano() }
+  limpiarMano(): void {
+    this.hud.limpiarMano()
+    this.output.setLetra('')
+  }
   actualizarROI(fueraZona: boolean): void                       { this.hud.actualizarROI(fueraZona) }
   limpiarROI(): void                                            { this.hud.limpiarROI() }
   agregarLetra(letra: string, borrar: boolean): void            { this.hud.agregarLetra(letra, borrar) }
@@ -96,9 +96,4 @@ export class RenderizadorUI {
   // ── Aprendizaje ───────────────────────────────────────────────────────────
   resaltarSena(letra: string): void                             { this.learn.resaltar(letra) }
   limpiarSena(): void                                           { this.learn.limpiar() }
-
-  // ── Tabs (uso interno futuro) ─────────────────────────────────────────────
-  cambiarTab(modo: 'traductor' | 'entrenamiento' | 'aprendizaje'): void {
-    this.tabs.activar(modo)
-  }
 }
