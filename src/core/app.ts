@@ -35,6 +35,7 @@ export class YOSOApp {
 
   // ── Visibilidad / pausa térmica ───────────────────────────────────────────
   private _pausado = false
+  private _iniciandoCamara = false
 
   // ── Muestreo de luminosidad ───────────────────────────────────────────────
   private readonly _canvasLuz: HTMLCanvasElement
@@ -124,85 +125,89 @@ export class YOSOApp {
 
   // ── Inicialización de cámara (reiniciable vía botón de reintento) ─────────────
   private async _iniciarCamara(): Promise<void> {
-    // pointer:coarse + maxTouchPoints detecta táctiles incluyendo iPadOS 13+
-    // que reporta UA "Macintosh"
-    const esMobil = matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0
-    const constraints: MediaStreamConstraints = esMobil
-      ? { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
-      : { video: { width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
-
-    let stream: MediaStream
+    if (this._iniciandoCamara) return
+    this._iniciandoCamara = true
     try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints)
-    } catch (err) {
-      const domErr = err as DOMException
-      if (domErr.name === 'NotAllowedError' || domErr.name === 'PermissionDeniedError') {
-        this.ui.mostrarEstadoVacio(domErr, () => void this._iniciarCamara(), true)
-      } else {
-        this.ui.mostrarEstadoVacio(domErr, () => void this._iniciarCamara(), false)
+      // pointer:coarse + maxTouchPoints detecta táctiles incluyendo iPadOS 13+
+      // que reporta UA "Macintosh"
+      const esMobil = matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0
+      const constraints: MediaStreamConstraints = esMobil
+        ? { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
+        : { video: { width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
+
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints)
+      } catch (err) {
+        const domErr = err as DOMException
+        if (domErr.name === 'NotAllowedError' || domErr.name === 'PermissionDeniedError') {
+          this.ui.mostrarEstadoVacio(domErr, () => void this._iniciarCamara(), true)
+        } else {
+          this.ui.mostrarEstadoVacio(domErr, () => void this._iniciarCamara(), false)
+        }
+        return
       }
-      return
-    }
 
-    this.ui.ocultarEstadoVacio()
+      this.ui.ocultarEstadoVacio()
 
-    const vision = await FilesetResolver.forVisionTasks('/mediapipe')
-    const handLandmarker = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: '/mediapipe/hand_landmarker.task',
-        delegate: 'GPU'
-      },
-      runningMode: 'VIDEO',
-      numHands: 1,
-      minHandDetectionConfidence: 0.80,
-      minHandPresenceConfidence:  0.70,
-      minTrackingConfidence:      0.70
-    })
+      const vision = await FilesetResolver.forVisionTasks('/mediapipe')
+      const handLandmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: '/mediapipe/hand_landmarker.task',
+          delegate: 'GPU'
+        },
+        runningMode: 'VIDEO',
+        numHands: 1,
+        minHandDetectionConfidence: 0.80,
+        minHandPresenceConfidence:  0.70,
+        minTrackingConfidence:      0.70
+      })
 
-    this._drawingUtils = new DrawingUtils(this.ctx)
+      this._drawingUtils = new DrawingUtils(this.ctx)
 
-    this.video.srcObject = stream
-    await new Promise<void>(resolve => { this.video.onloadedmetadata = () => resolve() })
-    await this.video.play()
+      this.video.srcObject = stream
+      await new Promise<void>(resolve => { this.video.onloadedmetadata = () => resolve() })
+      await this.video.play()
 
-    let skeletonOculto  = false
-    let ultimoVideoTime = -1
+      let ultimoVideoTime = -1
 
-    // rVFC = un callback exacto por frame del video (más preciso que rAF, sin
-    // dependencia del refresh rate del display). Fallback a rAF en Safari iOS <17.
-    const usaVFC = typeof (this.video as any).requestVideoFrameCallback === 'function'
-    const programar = usaVFC
-      ? () => (this.video as any).requestVideoFrameCallback(loop)
-      : () => requestAnimationFrame(loop)
+      // rVFC = un callback exacto por frame del video (más preciso que rAF, sin
+      // dependencia del refresh rate del display). Fallback a rAF en Safari iOS <17.
+      const usaVFC = typeof (this.video as any).requestVideoFrameCallback === 'function'
+      const programar = usaVFC
+        ? () => (this.video as any).requestVideoFrameCallback(loop)
+        : () => requestAnimationFrame(loop)
 
-    const loop = () => {
+      const loop = () => {
+        programar()
+        if (this._pausado || this.video.readyState < 2) return
+        if (this.video.currentTime === ultimoVideoTime) return  // misma frame
+        ultimoVideoTime = this.video.currentTime
+
+        const ahora = performance.now()
+
+        // FPS: circular buffer preasignado — sin push/shift
+        const oldest = this._fpsFill >= 2
+          ? this._fpsBuf[this._fpsFill < 60 ? 0 : this._fpsHead]
+          : 0
+        this._fpsBuf[this._fpsHead] = ahora
+        this._fpsHead = (this._fpsHead + 1) % 60
+        if (this._fpsFill < 60) this._fpsFill++
+        const fps = this._fpsFill >= 2
+          ? (this._fpsFill - 1) / ((ahora - oldest) / 1000)
+          : 0
+
+        const t0       = performance.now()
+        const resultado = handLandmarker.detectForVideo(this.video, ahora)
+        const mpMs     = performance.now() - t0
+
+        this._alRecibirResultados(resultado)
+        this.ui.actualizarPerfFrame(mpMs, fps)
+      }
       programar()
-      if (this._pausado || this.video.readyState < 2) return
-      if (this.video.currentTime === ultimoVideoTime) return  // misma frame
-      ultimoVideoTime = this.video.currentTime
-
-      const ahora = performance.now()
-
-      // FPS: circular buffer preasignado — sin push/shift
-      const oldest = this._fpsFill >= 2
-        ? this._fpsBuf[this._fpsFill < 60 ? 0 : this._fpsHead]
-        : 0
-      this._fpsBuf[this._fpsHead] = ahora
-      this._fpsHead = (this._fpsHead + 1) % 60
-      if (this._fpsFill < 60) this._fpsFill++
-      const fps = this._fpsFill >= 2
-        ? (this._fpsFill - 1) / ((ahora - oldest) / 1000)
-        : 0
-
-      const t0       = performance.now()
-      const resultado = handLandmarker.detectForVideo(this.video, ahora)
-      const mpMs     = performance.now() - t0
-
-      if (!skeletonOculto) { skeletonOculto = true; this.ui.ocultarSkeleton() }
-      this._alRecibirResultados(resultado)
-      this.ui.actualizarPerfFrame(mpMs, fps)
+    } finally {
+      this._iniciandoCamara = false
     }
-    programar()
   }
 
   // ── Page Visibility API — pausa térmica ───────────────────────────────────────
@@ -230,7 +235,7 @@ export class YOSOApp {
       if (oscuro !== this._toastLuzVivo) {
         this._toastLuzVivo = oscuro
         oscuro
-          ? this.ui.mostrarToast('luz', 'Poca luz detectada — busca una fuente de luz frente a ti para mejorar la precisión.', 'warn', 0)
+          ? this.ui.mostrarToast('luz', 'Poca luz detectada: busca una fuente de luz frente a ti para mejorar la precisión.', 'warn', 0)
           : this.ui.ocultarToast('luz')
       }
     } catch {
@@ -244,10 +249,10 @@ export class YOSOApp {
       btn.addEventListener('click', () => {
         const pestaña = btn.dataset['tab'] as typeof this.modo
         document.querySelectorAll('.mode-tab').forEach(b => {
-          b.classList.remove('active')
+          b.classList.remove('active', 'is-active')
           b.setAttribute('aria-selected', 'false')
         })
-        btn.classList.add('active')
+        btn.classList.add('active', 'is-active')
         btn.setAttribute('aria-selected', 'true')
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
         document.getElementById(`tab-${pestaña}`)?.classList.add('active')
