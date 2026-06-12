@@ -1,9 +1,7 @@
 // ============================================================================
 // LEARN · Modo Aprendizaje.
-// Hero = letra detectada gigante. Debajo, tira horizontal con las 28 clases
-// del alfabeto LSC; cada celda es un placeholder vacío reservado para una
-// ilustración futura del diseñador gráfico.
-// Mantiene API: resaltar(letra), limpiar().
+// Grid 6-col con las 28 letras del alfabeto LSC.
+// API pública: resaltar(letra), limpiar().
 // ============================================================================
 
 const ALFABETO: string[] = [
@@ -12,8 +10,7 @@ const ALFABETO: string[] = [
 ]
 
 export class AlphabetLearn {
-  private gridEl: HTMLElement | null = null
-  private heroEl: HTMLElement | null = null
+  private celdas: HTMLElement[] = []
   private vistas = new Set<string>()
   private actual: string | null = null
 
@@ -25,47 +22,34 @@ export class AlphabetLearn {
     const panel = document.getElementById('tab-aprendizaje')
     if (!panel) return
     panel.innerHTML = `
-      <section class="learn-section">
-        <header class="learn-head">
-          <span class="learn-eyebrow">SEÑA DETECTADA</span>
-          <span class="learn-meta">28 LETRAS LSC</span>
-        </header>
-
-        <div class="learn-hero-wrap">
-          <div id="learn-hero" class="learn-hero">·</div>
-        </div>
-
-        <div class="learn-strip" id="alphabet-grid" role="list">
-          ${ALFABETO.map(l => `
-            <span class="learn-cell" data-letter="${l}" role="listitem" aria-label="Letra ${l}">
-              <span class="learn-cell__label">${l.toLowerCase()}</span>
-              <span class="learn-cell__placeholder" aria-hidden="true"></span>
-            </span>
-          `).join('')}
-        </div>
-      </section>
+      <p class="alphabet-header">Alfabeto LSC · 28 letras</p>
+      <div class="alphabet-grid" id="alphabet-grid" role="list">
+        ${ALFABETO.map(l => `
+          <span class="alphabet-cell" data-letter="${l}" role="listitem" aria-label="Letra ${l}">
+            ${l.toLowerCase()}
+          </span>
+        `).join('')}
+      </div>
     `
-    this.gridEl = document.getElementById('alphabet-grid')
-    this.heroEl = document.getElementById('learn-hero')
+    this.celdas = Array.from(panel.querySelectorAll<HTMLElement>('.alphabet-cell'))
   }
 
   resaltar(letra: string): void {
-    if (!this.gridEl) return
-    if (letra) this.vistas.add(letra.toUpperCase())
-    this.actual = letra ? letra.toUpperCase() : null
+    const nueva = letra ? letra.toUpperCase() : null
+    if (nueva === this.actual) return
+    if (nueva) this.vistas.add(nueva)
+    this.actual = nueva
     this.repaint()
-    if (this.heroEl) this.heroEl.textContent = letra || '·'
   }
 
   limpiar(): void {
+    if (this.actual === null) return
     this.actual = null
     this.repaint()
-    if (this.heroEl) this.heroEl.textContent = '·'
   }
 
   private repaint(): void {
-    if (!this.gridEl) return
-    this.gridEl.querySelectorAll<HTMLElement>('.learn-cell').forEach(cell => {
+    for (const cell of this.celdas) {
       const l = cell.dataset.letter!
       if (l === this.actual) {
         cell.dataset.state = 'active'
@@ -74,6 +58,6 @@ export class AlphabetLearn {
       } else {
         delete cell.dataset.state
       }
-    })
+    }
   }
 }
