@@ -19,6 +19,9 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.2.10",
+    "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource-variable/geist-mono": "^5.2.8",
     "@mediapipe/tasks-vision": "0.10.35",
     "onnxruntime-web": "1.25.1"
   },

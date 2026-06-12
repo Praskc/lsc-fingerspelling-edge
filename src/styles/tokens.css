@@ -34,10 +34,10 @@
   --danger:  oklch(0.62 0.18 25);
 
   /* Tipografía */
-  --font-brand:   'Bricolage Grotesque', system-ui, sans-serif;
-  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
-  --font-ui:      'Geist', system-ui, -apple-system, sans-serif;
-  --font-mono:    'Geist Mono', ui-monospace, monospace;
+  --font-brand:   'Bricolage Grotesque Variable', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', system-ui, sans-serif;
+  --font-ui:      'Geist Variable', system-ui, -apple-system, sans-serif;
+  --font-mono:    'Geist Mono Variable', ui-monospace, monospace;
 
   /* Easing */
   --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);

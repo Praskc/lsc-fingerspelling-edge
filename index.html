@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>YOSO · You Only Sign Once</title>
   <meta name="description" content="YOSO. Reconocimiento del alfabeto dactilológico LSC en tiempo real, 100% en el navegador. Desarrollado en Sincelejo.">
-  <meta name="theme-color" content="#1c1816">
+  <meta name="theme-color" content="#363636">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,41 +17,101 @@
   <link rel="preload" href="/YOSO.onnx" as="fetch" crossorigin="anonymous" fetchpriority="high">
   <link rel="preload" href="/Centroides.json" as="fetch" crossorigin="anonymous" fetchpriority="high">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=Geist:wght@400;500;600;700&family=Departure+Mono&display=swap" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=Geist:wght@400;500;600;700&family=Departure+Mono&display=swap" crossorigin="anonymous">
-
-  <link rel="stylesheet" href="/src/styles/index.css">
+<link rel="stylesheet" href="/src/styles/index.css">
 </head>
 <body>
 
-  <div id="splash-screen" class="splash-screen">
+  <!-- Splash ─────────────────────────────────────────── -->
+  <div id="splash-screen">
     <div class="splash-inner">
       <span class="splash-status">Cargando motor</span>
       <span class="splash-wordmark">YOSO</span>
       <span class="splash-slogan">You only sign once</span>
-      <span class="splash-meta">LSC · SINCELEJO · v2.0</span>
+      <span class="splash-meta">LSC · SINCELEJO · v3.0</span>
     </div>
   </div>
 
-  <main id="app-shell">
+  <!-- App shell ──────────────────────────────────────── -->
+  <div id="app">
 
-    <nav id="tabs-bar" role="tablist" aria-label="Modos"></nav>
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar__brand">
+        <span class="topbar__title">
+          You Only <span class="topbar__title-accent">Sign</span> Once
+        </span>
+        <span class="topbar__tag">Sincelejo</span>
+      </div>
+      <nav class="nav" role="tablist" aria-label="Modos">
+        <button class="nav__link mode-tab is-active active" data-tab="traductor"     data-modo="traductor"     role="tab" aria-selected="true">traductor</button>
+        <button class="nav__link mode-tab"                  data-tab="entrenamiento" data-modo="entrenamiento" role="tab" aria-selected="false">entrenamiento</button>
+        <button class="nav__link mode-tab"                  data-tab="aprendizaje"   data-modo="aprendizaje"   role="tab" aria-selected="false">aprendizaje</button>
+      </nav>
+      <span class="edition">
+        <span class="edition__brand">YOSO</span>
+        <span class="edition__hover">unisucrino</span>
+        <span class="edition__tag">beta</span>
+      </span>
+    </header>
 
-    <div id="workspace">
-      <section id="panel-left"></section>
-      <section id="panel-right">
-        <div id="tab-traductor"     class="tab-panel active" role="tabpanel"></div>
-        <div id="tab-entrenamiento" class="tab-panel"        role="tabpanel"></div>
-        <div id="tab-aprendizaje"   class="tab-panel"        role="tabpanel"></div>
-      </section>
-    </div>
+    <!-- Main 2-col -->
+    <main id="app-main">
 
+      <!-- Col izquierda: cámara + transcripción (siempre visible) -->
+      <div id="feed-col">
+        <div class="feed">
+          <span class="feed__live"><span>en vivo</span></span>
+
+          <video  class="input_video"   autoplay muted playsinline></video>
+          <canvas class="output_canvas"></canvas>
+
+          <div class="feed__roi">
+            <span class="feed__roi-label">zona de detección</span>
+            <span class="feed__roi-corner feed__roi-corner--tl"></span>
+            <span class="feed__roi-corner feed__roi-corner--tr"></span>
+            <span class="feed__roi-corner feed__roi-corner--bl"></span>
+            <span class="feed__roi-corner feed__roi-corner--br"></span>
+          </div>
+
+          <div id="empty-state" class="empty-state" hidden>
+            <p class="empty-state__eyebrow">SIN ACCESO A CÁMARA</p>
+            <div class="empty-state__glyph">?</div>
+            <p class="empty-state__title">YOSO necesita acceso a la cámara para reconocer las señas.</p>
+            <button class="btn" id="es-retry">REINTENTAR ↻</button>
+            <p class="empty-state__hint">Verifica permisos en tu navegador</p>
+          </div>
+        </div>
+
+        <div id="transcript-block" class="transcript">
+          <div class="transcript__head">
+            <span class="transcript__label">transcripción</span>
+            <button class="transcript__clear btn btn--ghost" id="btn-clear" aria-label="Limpiar texto">limpiar</button>
+          </div>
+          <div class="transcript__text" id="final-text" aria-live="polite"><span class="transcript__caret"></span></div>
+        </div>
+      </div>
+
+      <!-- Col derecha: sidebar por modo -->
+      <div id="sidebar-col">
+
+        <!-- Traductor sidebar -->
+        <aside id="tab-traductor" class="sidebar tab-panel active" role="tabpanel"></aside>
+
+        <!-- Entrenamiento sidebar -->
+        <aside id="tab-entrenamiento" class="sidebar tab-panel" role="tabpanel"></aside>
+
+        <!-- Aprendizaje sidebar -->
+        <aside id="tab-aprendizaje" class="sidebar tab-panel" role="tabpanel"></aside>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
     <footer id="site-footer"></footer>
 
-  </main>
+  </div>
 
+  <!-- Overlays ────────────────────────────────────────── -->
   <div id="onboarding-root" role="dialog" aria-modal="true"></div>
   <div id="toast-root" aria-live="polite" aria-atomic="false"></div>
 

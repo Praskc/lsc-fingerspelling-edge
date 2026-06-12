@@ -1,7 +1,7 @@
 // ============================================================================
 // SW.JS — Service Worker YOSO (offline-first, cache-first para assets)
 // ============================================================================
-const CACHE = 'yoso-v11'
+const CACHE = 'yoso-v12'
 
 const PRECACHE = [
   '/',
@@ -62,30 +62,6 @@ self.addEventListener('fetch', e => {
 
   // Ignorar chrome-extension y otros esquemas no http(s)
   if (!url.protocol.startsWith('http')) return
-
-  // ── Google Fonts: cache-first con fallback silencioso ──────
-  // No bloquear si falla — el browser usa fuentes del sistema
-  const esFonts = url.hostname.includes('fonts.googleapis.com') ||
-                  url.hostname.includes('fonts.gstatic.com')
-
-  if (esFonts) {
-    e.respondWith(
-      safeMatch(e.request).then(cached => {
-        if (cached) return cached
-        return fetch(new Request(e.request.url, { mode: 'cors', credentials: 'omit' })).then(res => {
-          if (res.ok) guardarEnCache(e.request, res)
-          return res
-        }).catch(() => {
-          // Si Google Fonts falla, devolver respuesta vacía — no bloquea el render
-          return new Response('', {
-            status: 200,
-            headers: { 'Content-Type': 'text/css' }
-          })
-        })
-      })
-    )
-    return
-  }
 
   // ── Navegación HTML: network-first ───────────────────────
   if (e.request.mode === 'navigate') {

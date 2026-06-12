@@ -2,6 +2,11 @@
    YOSO v3 · Sistema de estilos modular
    ============================================================================ */
 
+/* Fuentes self-hosted (Fontsource, mismo origen) */
+@import '@fontsource-variable/bricolage-grotesque/opsz.css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
 /* Fundación */
 @import './tokens.css';
 @import './reset.css';
