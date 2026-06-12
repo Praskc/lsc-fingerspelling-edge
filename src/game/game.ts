@@ -73,6 +73,11 @@ export class GameManager {
   private activo:       boolean  = false
   private timerPista:   number   = 0
   private pool:         string[] = []
+  private racha:        number   = 0
+
+  private _emitir(detail: Record<string, unknown>): void {
+    window.dispatchEvent(new CustomEvent('yoso:juego', { detail }))
+  }
 
   constructor() {
     this.elObjetivo    = document.getElementById('letra-objetivo')!
@@ -89,6 +94,7 @@ export class GameManager {
     this.nivelIdx   = 0
     this.puntos     = 0
     this.palabrasOk = 0
+    this.racha      = 0
     this.elPuntuacion.textContent = '0'
     this._setFeedback('CARGANDO...', 'idle')
     await this._cargarPool()
@@ -143,11 +149,13 @@ export class GameManager {
 
       if (filtradas.length < 5) throw new Error('Pool insuficiente')
       this.pool = filtradas
+      this._emitir({ tipo: 'fuente', fuente: 'datamuse' })
 
     } catch (err) {
       console.warn('[GameManager] Datamuse falló, usando banco local:', err)
       const nivel = this.nivelIdx + 1
       this.pool = [...(BANCO[nivel] ?? BANCO[1])].sort(() => Math.random() - 0.5)
+      this._emitir({ tipo: 'fuente', fuente: 'local' })
       this._setFeedback('SIN CONEXIÓN — MODO LOCAL', 'warn')
       window.setTimeout(() => {
         if (this.activo && !this.bloqueado) this._setFeedback('HAZ LA SEÑA...', 'idle')
@@ -169,6 +177,8 @@ export class GameManager {
 
     this.palabraActual = this.pool.pop()!
     this.errores = 0
+    this._emitir({ tipo: 'intentos', errores: 0 })
+    this._emitir({ tipo: 'nivel', nivelIdx: this.nivelIdx })
     this._renderPalabra()
     this._renderProgreso()
     this._setFeedback('HAZ LA SEÑA...', 'idle')
@@ -190,6 +200,8 @@ export class GameManager {
       this.bloqueado   = true
       this.puntos     += this.palabraActual.length * 10
       this.palabrasOk++
+      this.racha++
+      this._emitir({ tipo: 'palabra', palabra: this.palabraActual, racha: this.racha })
       this.elPuntuacion.textContent = String(this.puntos)
       this.elPuntuacion.classList.remove('score-bump')
       void this.elPuntuacion.offsetWidth
@@ -220,11 +232,14 @@ export class GameManager {
 
   private _letraIncorrecta(letra: string): void {
     this.errores++
+    this._emitir({ tipo: 'intentos', errores: this.errores })
 
     if (this.errores >= 3) {
       // 3 errores en la misma letra — saltar palabra
       this.errores  = 0
       this.bloqueado = true
+      this.racha = 0
+      this._emitir({ tipo: 'omitida', palabra: this.palabraActual })
       clearTimeout(this.timerPista)
       this.elImagenPista.classList.remove('visible')
       this._setFeedback('PALABRA OMITIDA', 'warn')
