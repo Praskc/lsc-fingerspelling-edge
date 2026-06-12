@@ -36,3 +36,18 @@
 
 .sidebar { display: none; flex-direction: column; gap: 16px; }
 .sidebar.active { display: flex; }
+
+/* ── Responsive ────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  #app-main { grid-template-columns: minmax(0, 1fr) 360px; }
+}
+
+@media (max-width: 920px) {
+  #app-main {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0 16px 24px;
+  }
+  /* El feed (cámara) primero, la sidebar del modo debajo */
+  #sidebar-col { order: 2; }
+}

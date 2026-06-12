@@ -110,3 +110,33 @@
   border: 1px solid var(--accent-dim);
   border-radius: 999px;
 }
+
+/* ── Responsive ────────────────────────────────────────────────────── */
+@media (max-width: 920px) {
+  .topbar {
+    grid-template-columns: 1fr auto;
+    row-gap: 10px;
+    padding: 12px 16px;
+  }
+  /* El nav pill baja a su propia fila, ancho completo, targets táctiles */
+  .nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: stretch;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .nav__link {
+    min-height: 44px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar__title { font-size: 20px; }
+  .topbar__tag,
+  .topbar__brand .topbar__tag::before { display: none; }
+  .edition__brand,
+  .edition__hover { display: none; }
+}
