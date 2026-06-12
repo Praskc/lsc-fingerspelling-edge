@@ -1,8 +1,3 @@
-// ============================================================================
-// HUD · Actualiza los valores del sidebar Traductor.
-// Los elementos son renderizados por OutputPanel; HUD los bindea en diferido.
-// ============================================================================
-
 const ARC_CIRCUMFERENCE = 263.9
 
 export class HUD {
@@ -15,7 +10,7 @@ export class HUD {
   private roiEl:      HTMLElement | null = null
   private _fueraZona  = false
 
-  // Guards: estas rutas corren a ~30fps, solo escribir DOM si algo cambió.
+  // ~30fps: solo escribir DOM si el valor cambió
   private _prevPct    = -1
   private _prevMano   = ''
   private _prevEstado = ''
@@ -36,9 +31,7 @@ export class HUD {
     this.roiEl      = document.querySelector('.feed__roi')
   }
 
-  estadoListo(_estado: 'idle' | 'signing' | 'warning'): void {
-    // El indicador EN VIVO vive en PanelLeft (feed__live).
-  }
+  estadoListo(_estado: 'idle' | 'signing' | 'warning'): void {}
 
   actualizarPrediccion(_letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
     this._limpioKey = ''

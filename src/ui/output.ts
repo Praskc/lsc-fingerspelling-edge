@@ -1,7 +1,3 @@
-// ============================================================================
-// OUTPUT · Sidebar del modo Traductor: detection card + buffer + metrics + stream.
-// ============================================================================
-
 const STREAM_W   = 300
 const STREAM_H   = 130
 const STREAM_MAX = 150  // ~5s a 30fps

@@ -9,8 +9,7 @@ const NIVELES = [
   { nivel: 5, minLen: 7, maxLen: 9, req: 12, label: 'MAESTRO'  },
 ]
 
-// Banco de palabras en español sin tildes ni Ñ (A-Z). Fallback cuando Datamuse
-// no está disponible, también garantiza que jamás aparezca una palabra inglesa.
+// Banco local de 60 palabras por nivel (A-Z, sin tildes ni Ñ).
 const BANCO: Record<number, string[]> = {
   1: [
     'SOL','MAR','PAZ','LUZ','RED','PAN','SAL','FIN','GAS','LEY',
@@ -68,7 +67,7 @@ export class GameManager {
   private palabraActual:string   = ''
   private letraIdx:     number   = 0
   private palabrasOk:   number   = 0
-  private errores:      number   = 0   // errores en la letra actual
+  private errores:      number   = 0
   private bloqueado:    boolean  = false
   private activo:       boolean  = false
   private timerPista:   number   = 0
@@ -118,14 +117,12 @@ export class GameManager {
   private async _cargarPool(): Promise<void> {
     const { minLen, maxLen } = NIVELES[this.nivelIdx]
     try {
-      // Una petición por cada longitud del rango [minLen, maxLen] — datamuse
-      // sp= solo acepta patrones de longitud exacta, así que pedir uno solo
-      // pierde la mayoría del rango.
       const ctrl = new AbortController()
       const timer = window.setTimeout(() => ctrl.abort(), 3000)
       const longitudes: number[] = []
       for (let n = minLen; n <= maxLen; n++) longitudes.push(n)
 
+      // datamuse sp= solo acepta longitud exacta, pedimos una por cada valor del rango
       const respuestas = await Promise.all(longitudes.map(n =>
         fetch(`https://api.datamuse.com/words?sp=${'?'.repeat(n)}&v=es&max=200`, { signal: ctrl.signal })
           .then(r => r.ok ? r.json() as Promise<{ word: string }[]> : [])
@@ -235,7 +232,6 @@ export class GameManager {
     this._emitir({ tipo: 'intentos', errores: this.errores })
 
     if (this.errores >= 3) {
-      // 3 errores en la misma letra — saltar palabra
       this.errores  = 0
       this.bloqueado = true
       this.racha = 0
@@ -254,7 +250,7 @@ export class GameManager {
   }
 
   private _renderPalabra(): void {
-    // Fix XSS: createElement en vez de innerHTML — palabraActual viene de API externa
+    // XSS: createElement en vez de innerHTML (palabraActual puede venir de API externa)
     this.elObjetivo.textContent = ''
     this.palabraActual.split('').forEach((ch, i) => {
       const span = document.createElement('span')

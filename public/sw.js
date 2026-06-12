@@ -1,6 +1,3 @@
-// ============================================================================
-// SW.JS — Service Worker YOSO (offline-first, cache-first para assets)
-// ============================================================================
 const CACHE = 'yoso-v12'
 
 const PRECACHE = [
@@ -42,7 +39,7 @@ function guardarEnCache(req, res) {
 }
 
 function safeMatch(req) {
-  // Envuelve caches.match en try/catch — en algunos contextos puede rechazar
+  // caches.match puede rechazar en algunos contextos (ServiceWorker sin scope correcto)
   try {
     return caches.match(req).catch(() => undefined)
   } catch {
@@ -60,10 +57,8 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // Ignorar chrome-extension y otros esquemas no http(s)
   if (!url.protocol.startsWith('http')) return
 
-  // ── Navegación HTML: network-first ───────────────────────
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request)
@@ -91,9 +86,7 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // ── Resto (JS, CSS, ONNX, WASM): cache-first puro ─────────────────────────
-  // Los assets de Vite van hasheados (inmutables) y los no hasheados
-  // se invalidan subiendo la versión de CACHE en cada deploy.
+  // Assets Vite van hasheados (inmutables); los no hasheados se invalidan subiendo CACHE.
   e.respondWith(
     safeMatch(e.request).then(cached => {
       if (cached) return cached

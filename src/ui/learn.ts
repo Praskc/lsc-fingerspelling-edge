@@ -1,9 +1,3 @@
-// ============================================================================
-// LEARN · Modo Aprendizaje.
-// Grid 6-col con las 28 letras del alfabeto LSC.
-// API pública: resaltar(letra), limpiar().
-// ============================================================================
-
 const ALFABETO: string[] = [
   'A','B','C','D','E','F','G','H','I','J','K','L','M','N',
   'Ñ','O','P','Q','R','S','T','U','V','W','X','Y','Z',

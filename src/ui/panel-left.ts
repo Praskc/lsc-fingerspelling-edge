@@ -1,8 +1,3 @@
-// ============================================================================
-// PANEL LEFT · Feed de cámara (video + canvas estáticos en index.html)
-// Este módulo solo gestiona el indicador EN VIVO de la badge.
-// ============================================================================
-
 export class PanelLeft {
   private liveEl: HTMLElement | null = null
   private _prev = ''

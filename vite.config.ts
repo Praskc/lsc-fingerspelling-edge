@@ -52,31 +52,42 @@ const sirveAssetsSelfHostedDev: Plugin = {
   name: 'sirve-assets-self-hosted-dev',
   apply: 'serve',
   configureServer(server) {
-    const mapa = new Map(ASSETS_SELF_HOSTED.map(([src, dest]) => ['/' + dest, src]))
+    const mapa      = new Map(ASSETS_SELF_HOSTED.map(([src, dest]) => ['/' + dest, src]))
+    // Cache en memoria para archivos ya leídos/comprimidos — evita leer y gzip-ear
+    // el mismo archivo de disco repetidamente durante el dev session.
+    const bufCache  = new Map<string, Buffer>()
+    const gzipCache = new Map<string, Buffer>()
+
     server.middlewares.use(async (req, res, next) => {
       const ruta = (req.url ?? '').split('?')[0]
-      const src = mapa.get(ruta)
+      const src  = mapa.get(ruta)
       if (!src) { next(); return }
       try {
-        const buf = await readFile(resolve(process.cwd(), src))
+        if (!bufCache.has(ruta)) {
+          bufCache.set(ruta, await readFile(resolve(process.cwd(), src)))
+        }
+        const buf = bufCache.get(ruta)!
         const ext = ruta.split('.').pop() ?? ''
-        const ct = ext === 'wasm'
+        const ct  = ext === 'wasm'
           ? 'application/wasm'
           : ext === 'mjs' || ext === 'js'
             ? 'application/javascript'
             : 'application/octet-stream'
         res.setHeader('Content-Type', ct)
-        // Cache agresivo: estos vienen de node_modules, son inmutables hasta que
-        // el usuario haga pnpm install de otra versión.
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-        // COOP/COEP requeridos para SharedArrayBuffer (intraOpNumThreads de ORT)
         for (const [k, v] of Object.entries(COOP_HEADERS)) res.setHeader(k, v)
         res.setHeader('Cross-Origin-Resource-Policy', 'same-origin')
-        const aceptaGzip = (req.headers['accept-encoding'] ?? '').toString().includes('gzip')
+
+        // Los .wasm son binario denso, comprimen mal y el browser los maneja crudo.
+        // Comprimir 26 MB en dev bloquea varios segundos — se sirven sin gzip.
+        const esWasm    = ext === 'wasm'
+        const aceptaGzip = !esWasm && (req.headers['accept-encoding'] ?? '').toString().includes('gzip')
         if (aceptaGzip) {
-          const comprimido = await gzip(buf)
+          if (!gzipCache.has(ruta)) {
+            gzipCache.set(ruta, await gzip(buf))
+          }
           res.setHeader('Content-Encoding', 'gzip')
-          res.end(comprimido)
+          res.end(gzipCache.get(ruta)!)
         } else {
           res.end(buf)
         }

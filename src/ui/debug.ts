@@ -1,9 +1,3 @@
-// ============================================================================
-// DEBUG PANEL · Activable con Shift+D o ?debug=1
-// Renderiza un overlay técnico cuando se activa.
-// Mantiene API: actualizar(p), actualizarPerf(mpMs, fps).
-// ============================================================================
-
 import type { CargaDebug } from '../engine/types'
 
 export class DebugPanel {

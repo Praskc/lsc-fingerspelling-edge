@@ -1,10 +1,3 @@
-// ============================================================================
-// GAME PANEL · Sidebar del modo Entrenamiento.
-// Preserva IDs requeridos por GameManager:
-//   #letra-objetivo, #feedback-mensaje, #puntuacion, #nivel-label,
-//   #progreso-texto, #progreso-bar, #imagen-pista
-// ============================================================================
-
 const NIVELES_META = [
   { label: 'NOVATO',   idx: 0 },
   { label: 'BÁSICO',   idx: 1 },

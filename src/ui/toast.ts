@@ -1,14 +1,9 @@
-// ============================================================================
-// TOAST · Notificaciones discretas con eyebrow tipográfico
-// Mantiene API: mostrar(id, msg, tipo, dur), ocultar(id).
-// ============================================================================
-
 type Tipo = 'info' | 'warn' | 'error'
 
 const ETIQUETAS: Record<Tipo, string> = {
-  info:  'INFO',
-  warn:  'AVISO',
-  error: 'ERROR',
+  info:  'SISTEMA',
+  warn:  'ATENCIÓN',
+  error: 'FALLO',
 }
 
 export class Toast {

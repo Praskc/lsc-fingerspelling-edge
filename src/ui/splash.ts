@@ -1,9 +1,3 @@
-// ============================================================================
-// SPLASH · Pantalla de carga editorial
-// Mantiene API: mensaje(), ocultar(), ocultarSkeleton(),
-// mostrarEstadoVacio(), ocultarEstadoVacio().
-// ============================================================================
-
 export class Splash {
   private root: HTMLElement | null
   private status: HTMLElement | null = null
@@ -27,11 +21,6 @@ export class Splash {
     this.root.classList.add('is-hidden')
     const root = this.root
     setTimeout(() => { root.style.display = 'none' }, 400)
-  }
-
-  ocultarSkeleton(): void {
-    const sk = document.getElementById('canvas-skeleton')
-    if (sk) sk.remove()
   }
 
   mostrarEstadoVacio(err: DOMException | null, onReintentar: () => void, _bloqueado = false): void {

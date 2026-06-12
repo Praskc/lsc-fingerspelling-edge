@@ -1,9 +1,3 @@
-// ============================================================================
-// SIGNS.TS — Diagramas SVG del alfabeto ASL
-// Perspectiva: observador (como en libros de texto ASL)
-// Obra original CC0 — posiciones de dedos basadas en ASL estándar
-// ============================================================================
-
 const C   = '#38BDF8'
 const F   = 'rgba(56,189,248,0.46)'
 const FT  = 'rgba(180,236,255,0.28)'
@@ -12,18 +6,14 @@ const FD  = 'rgba(56,189,248,0.07)'
 const SW  = '2.2'
 const SW2 = '1.6'
 
-// translate(80,0) scale(-1,1) voltea todos los paths al plano del observador:
-// el meñique queda a la derecha, el índice a la izquierda, el pulgar a la izquierda.
+// translate(80,0) scale(-1,1): voltea al plano del observador (meñique derecha, índice izquierda)
 const wrap = (body: string): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100">` +
   `<g transform="translate(80,0) scale(-1,1)" stroke="${C}" stroke-width="${SW}" stroke-linecap="round" stroke-linejoin="round">` +
   body + `</g></svg>`
 
-// ── Formas base ──────────────────────────────────────────────────────────────
-
 // Dedo extendido — cónico con bezier, nudillo PIP y uña
 // Centros: meñique=18 · anular=30 · medio=42 · índice=54
-// Ancho: base 14px → PIP 11px → punta 9px
 const fu = (cx: number): string =>
   `<path d="M${cx-7},62 C${cx-8},50 ${cx-5.5},26 ${cx-4},18 Q${cx},13 ${cx+4},18 C${cx+5.5},26 ${cx+8},50 ${cx+7},62 Z" ` +
   `fill="${F}" stroke="${C}" stroke-width="${SW}"/>` +
@@ -63,8 +53,6 @@ const fist =
   `<path d="M10,38 Q17,32 24,35 Q30,30 37,33 Q43,29 50,33 Q57,30 64,35 C69,38 71,44 71,56 L71,72 Q71,87 58,90 L18,90 Q8,87 8,72 L8,56 C8,44 9,39 10,38 Z" ` +
   `fill="${FM}" stroke="${C}" stroke-width="2"/>`
 
-// ── Pulgares ─────────────────────────────────────────────────────────────────
-
 // Pulgar lateral derecho en coordenadas de dibujo → izquierda para el observador (A, Y)
 const tOut =
   `<path d="M61,73 C59,68 59,55 62,47 Q65,41 70,42 Q75,44 74,52 C73,62 70,74 67,77 Q63,78 61,73 Z" ` +
@@ -86,8 +74,6 @@ const tIn =
 const tUnder =
   `<path d="M28,77 C26,74 27,71 30,70 L44,69 C48,69 50,71 50,74 C50,77 48,79 44,80 L30,80 C27,80 28,81 28,77 Z" ` +
   `fill="${FD}" stroke="${C}" stroke-width="1.4"/>`
-
-// ── 26 letras ────────────────────────────────────────────────────────────────
 
 export const SIGNS: Record<string, string> = {
 

@@ -1,6 +1,3 @@
-// ============================================================================
-// APP.TS — Orquestador YOSO
-// ============================================================================
 import * as ort                                          from 'onnxruntime-web'
 import { HandLandmarker, FilesetResolver, DrawingUtils } from '@mediapipe/tasks-vision'
 import type { HandLandmarkerResult }                     from '@mediapipe/tasks-vision'
@@ -9,12 +6,10 @@ import { GameManager }                                   from '../game/game'
 import { RenderizadorUI }                                from '../ui'
 import type { Lateralidad, Punto }                       from '../engine/types'
 
-// ── Límites de la región de interés (coordenadas normalizadas) ────────────────
 const LIMITE_SUPERIOR  = 0.10
 const LIMITE_IZQUIERDO = 0.15
 const LIMITE_DERECHO   = 0.85
 
-// ── Umbral de luminosidad media (0-255) bajo el cual se alerta oscuridad ──────
 const UMBRAL_LUZ = 40
 
 export class YOSOApp {
@@ -33,25 +28,22 @@ export class YOSOApp {
   private prevMunecaX  = 0
   private prevMunecaY  = 0
 
-  // ── Visibilidad / pausa térmica ───────────────────────────────────────────
   private _pausado = false
   private _iniciandoCamara = false
 
-  // ── Muestreo de luminosidad ───────────────────────────────────────────────
   private readonly _canvasLuz: HTMLCanvasElement
   private readonly _ctxLuz:    CanvasRenderingContext2D
   private _frameCount    = 0
   private _toastLuzVivo  = false
 
-  // ── Circular buffer para FPS — sin push/shift por frame ──────────────────
+  // Circular buffer sin push/shift por frame
   private readonly _fpsBuf = new Float64Array(60)
   private _fpsHead = 0
   private _fpsFill = 0
 
   constructor() {
     this.motor  = new MotorInferencia()
-    // UI primero: crea los IDs (letra-objetivo, puntuacion, etc.) que GameManager
-    // consulta en su constructor.
+    // UI primero: crea los IDs que GameManager consulta en su constructor.
     this.ui     = new RenderizadorUI()
     this.juego  = new GameManager()
 
@@ -59,27 +51,22 @@ export class YOSOApp {
     this.canvas = document.querySelector('.output_canvas')!
     this.ctx    = this.canvas.getContext('2d')!
 
-    // Canvas pequeño reutilizable para muestreo de luminosidad (32×18 = 576 píxeles)
-    this._canvasLuz      = document.createElement('canvas')
-    this._canvasLuz.width  = 32
-    this._canvasLuz.height = 18
+    this._canvasLuz         = document.createElement('canvas')
+    this._canvasLuz.width   = 32
+    this._canvasLuz.height  = 18
     this._ctxLuz = this._canvasLuz.getContext('2d', { willReadFrequently: true })!
 
     document.addEventListener('visibilitychange', () => this._alCambiarVisibilidad())
     this._vincularEventos()
   }
 
-  // ── Arranque ─────────────────────────────────────────────────────────────────
   public async iniciar(): Promise<void> {
-    // Binarios WASM self-hosted en /ort/ (copiados desde node_modules en build)
     ort.env.wasm.wasmPaths = '/ort/'
 
     try {
       this.ui.mensajeSplash('Cargando modelo…')
 
-      // Solo WASM: el modelo (~455K params) es demasiado pequeño para que
-      // WebGPU amortice su overhead de dispatch+sync+transferencia por frame.
-      // WASM SIMD con 2 hilos gana ~5-15ms vs WebGPU en este FCNN.
+      // Solo WASM: el modelo es demasiado pequeño para que WebGPU amortice su overhead por frame.
       const hilos = Math.min(2, navigator.hardwareConcurrency ?? 2)
       const [sesion, centroidesRaw] = await Promise.all([
         ort.InferenceSession.create('./YOSO.onnx', {
@@ -118,18 +105,15 @@ export class YOSOApp {
       return
     }
 
-    // Mostrar tutorial en primera visita; esperar a que el usuario lo cierre
     await this.ui.mostrarOnboarding()
     await this._iniciarCamara()
   }
 
-  // ── Inicialización de cámara (reiniciable vía botón de reintento) ─────────────
   private async _iniciarCamara(): Promise<void> {
     if (this._iniciandoCamara) return
     this._iniciandoCamara = true
     try {
-      // pointer:coarse + maxTouchPoints detecta táctiles incluyendo iPadOS 13+
-      // que reporta UA "Macintosh"
+      // pointer:coarse + maxTouchPoints detecta táctiles incluyendo iPadOS 13+, que reporta UA "Macintosh"
       const esMobil = matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0
       const constraints: MediaStreamConstraints = esMobil
         ? { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 360 } }, audio: false }
@@ -171,8 +155,8 @@ export class YOSOApp {
 
       let ultimoVideoTime = -1
 
-      // rVFC = un callback exacto por frame del video (más preciso que rAF, sin
-      // dependencia del refresh rate del display). Fallback a rAF en Safari iOS <17.
+      // rVFC = callback exacto por frame de video, sin depender del refresh rate del display.
+      // Fallback a rAF en Safari iOS <17.
       const usaVFC = typeof (this.video as any).requestVideoFrameCallback === 'function'
       const programar = usaVFC
         ? () => (this.video as any).requestVideoFrameCallback(loop)
@@ -181,12 +165,10 @@ export class YOSOApp {
       const loop = () => {
         programar()
         if (this._pausado || this.video.readyState < 2) return
-        if (this.video.currentTime === ultimoVideoTime) return  // misma frame
-        ultimoVideoTime = this.video.currentTime
+        if (this.video.currentTime === ultimoVideoTime) return
 
         const ahora = performance.now()
 
-        // FPS: circular buffer preasignado — sin push/shift
         const oldest = this._fpsFill >= 2
           ? this._fpsBuf[this._fpsFill < 60 ? 0 : this._fpsHead]
           : 0
@@ -210,7 +192,6 @@ export class YOSOApp {
     }
   }
 
-  // ── Page Visibility API — pausa térmica ───────────────────────────────────────
   private _alCambiarVisibilidad(): void {
     this._pausado = document.hidden
     if (document.hidden) {
@@ -220,7 +201,6 @@ export class YOSOApp {
     }
   }
 
-  // ── Diagnóstico de luminosidad ────────────────────────────────────────────────
   private _verificarLuminosidad(): void {
     if (this.video.videoWidth === 0) return
     try {
@@ -230,7 +210,7 @@ export class YOSOApp {
       for (let i = 0; i < data.length; i += 4) {
         suma += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
       }
-      const promedio = suma / (data.length / 4) // 0–255
+      const promedio = suma / (data.length / 4)
       const oscuro   = promedio < UMBRAL_LUZ
       if (oscuro !== this._toastLuzVivo) {
         this._toastLuzVivo = oscuro
@@ -239,11 +219,10 @@ export class YOSOApp {
           : this.ui.ocultarToast('luz')
       }
     } catch {
-      // SecurityError posible en contextos cross-origin (ignorar silenciosamente)
+      // SecurityError posible en contextos cross-origin
     }
   }
 
-  // ── Eventos ───────────────────────────────────────────────────────────────────
   private _vincularEventos(): void {
     document.querySelectorAll<HTMLButtonElement>('.mode-tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -268,7 +247,6 @@ export class YOSOApp {
     })
   }
 
-  // ── Callbacks del motor de inferencia ────────────────────────────────────────
   private _alDetectarLetra(letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
     this.ui.actualizarPrediccion(letra, confianza, latencia, esIzquierda)
     if (this.modo === 'aprendizaje') {
@@ -282,7 +260,6 @@ export class YOSOApp {
     this.ui.agregarLetra(letra, letra === BORRAR)
   }
 
-  // ── Pipeline HandLandmarker ───────────────────────────────────────────────────
   private _alRecibirResultados(resultado: HandLandmarkerResult): void {
     const ancho = this.video.videoWidth
     const alto  = this.video.videoHeight
@@ -293,7 +270,6 @@ export class YOSOApp {
       this.altoCanvas    = alto
     }
 
-    // Verificar luminosidad cada ~3 segundos (90 frames a 30 fps)
     if (++this._frameCount % 90 === 0) this._verificarLuminosidad()
 
     const ac = this.canvas.width, al = this.canvas.height
