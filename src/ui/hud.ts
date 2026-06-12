@@ -15,6 +15,13 @@ export class HUD {
   private roiEl:      HTMLElement | null = null
   private _fueraZona  = false
 
+  // Guards: estas rutas corren a ~30fps, solo escribir DOM si algo cambió.
+  private _prevPct    = -1
+  private _prevMano   = ''
+  private _prevEstado = ''
+  private _prevRoi    = ''
+  private _limpioKey  = ''
+
   constructor() {
     queueMicrotask(() => this.bind())
   }
@@ -34,30 +41,44 @@ export class HUD {
   }
 
   actualizarPrediccion(_letra: string, confianza: number, latencia: number, esIzquierda: boolean): void {
+    this._limpioKey = ''
+
     const pct = Math.round(confianza * 100)
-    if (this.mConf) {
+    if (this.mConf && pct !== this._prevPct) {
+      this._prevPct = pct
       this.mConf.innerHTML = `${pct}<span class="unit">%</span>`
       this.mConf.dataset.state = confianza >= 0.9 ? 'high' : 'on'
-    }
-    if (this.arcFill) {
-      this.arcFill.style.strokeDashoffset = String(ARC_CIRCUMFERENCE * (1 - pct / 100))
+      if (this.arcFill) {
+        this.arcFill.style.strokeDashoffset = String(ARC_CIRCUMFERENCE * (1 - pct / 100))
+      }
     }
     if (this.mTime) this.mTime.innerHTML = `${latencia.toFixed(1)}<span class="unit">ms</span>`
 
-    // Lateralidad de la mano
-    if (this.mHand) {
-      this.mHand.textContent = esIzquierda ? 'izq.' : 'der.'
+    const mano = esIzquierda ? 'izq.' : 'der.'
+    if (this.mHand && mano !== this._prevMano) {
+      this._prevMano = mano
+      this.mHand.textContent = mano
       this.mHand.dataset.state = 'on'
     }
   }
 
   estadoMano(_estado: string, esOptimo: boolean): void {
     if (!this.mEstado) return
-    this.mEstado.textContent = esOptimo ? 'óptimo' : 'mov.'
+    const estado = esOptimo ? 'óptimo' : 'mov.'
+    if (estado === this._prevEstado) return
+    this._prevEstado = estado
+    this.mEstado.textContent = estado
     this.mEstado.dataset.state = esOptimo ? 'on' : 'warn'
   }
 
   limpiarMano(): void {
+    const clave = `limpio:${this._fueraZona}`
+    if (this._limpioKey === clave) return
+    this._limpioKey  = clave
+    this._prevPct    = -1
+    this._prevMano   = ''
+    this._prevEstado = ''
+
     if (this.mHand) {
       this.mHand.textContent = 'ND'
       this.mHand.dataset.state = 'off'
@@ -79,14 +100,18 @@ export class HUD {
   actualizarROI(fueraZona: boolean): void {
     this._fueraZona = fueraZona
     if (!this.roiEl) return
-    this.roiEl.setAttribute('data-state', fueraZona ? 'warning' : 'ok')
+    const estado = fueraZona ? 'warning' : 'ok'
+    if (estado === this._prevRoi) return
+    this._prevRoi = estado
+    this.roiEl.setAttribute('data-state', estado)
     const label = this.roiEl.querySelector('.feed__roi-label')
     if (label) label.textContent = fueraZona ? 'fuera del rango' : 'zona de detección'
   }
 
   limpiarROI(): void {
     this._fueraZona = false
-    if (!this.roiEl) return
+    if (!this.roiEl || this._prevRoi === '') return
+    this._prevRoi = ''
     this.roiEl.removeAttribute('data-state')
     const label = this.roiEl.querySelector('.feed__roi-label')
     if (label) label.textContent = 'zona de detección'
