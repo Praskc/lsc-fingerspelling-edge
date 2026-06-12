@@ -2,35 +2,32 @@
 
 # YOSO: You Only Sign Once
 
-**Motor de reconocimiento de Lengua de Señas Colombiana (LSC) en tiempo real**  
+**Motor de reconocimiento de Lengua de Señas Colombiana (LSC) en tiempo real**
 *Inferencia edge · Sin servidor · < 10ms de latencia*
 
-[![Branch: stable](https://img.shields.io/badge/branch-main_·_stable-2EA043?style=flat-square)](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main)
+[![Branch: rolling](https://img.shields.io/badge/branch-rolling-0EA5E9?style=flat-square)](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-Web-FF6F00?style=flat-square&logo=onnx&logoColor=white)](https://onnxruntime.ai/)
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-Tasks_Vision_0.10.35-00897B?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker)
-[![License](https://img.shields.io/badge/Licencia-GPL_2.0-blue?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/Licencia-MIT-green?style=flat-square)](LICENSE)
 
 </div>
 
-> **Estás viendo la rama `main`, versión estable de producción.**
+> **Estás viendo la rama `rolling`, desarrollo activo.**
 >
-> Esta es la rama que despliega Vercel. Toda mejora aquí pasa primero por la rama `rolling` (auto-updates de dependencias) y se mergea manualmente tras validación. Versión actual: **v3.0**, ver [Changelog](#changelog) al final.
->
-> | Rama | Propósito | Cuándo usarla |
-> |------|-----------|---------------|
-> | [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main) | **Stable**: producción Vercel | Es la que estás viendo |
-> | [`rolling`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling) | Bleeding edge con auto-bumps de dependencias | Probar features antes del merge a `main` |
-> | [`legacy`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/legacy) | YOSO v2 en JavaScript vanilla, archivado | Histórico / referencia |
+> | Rama | Propósito |
+> |------|-----------|
+> | [`rolling`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling) | **Activa**: TypeScript, arquitectura modular, self-hosted |
+> | [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main) | Legacy JavaScript vanilla, archivada |
 
 ## ¿Qué es YOSO?
 
 YOSO es un sistema completo de reconocimiento del alfabeto dactilológico de la **Lengua de Señas Colombiana (LSC)** que corre **100% en el navegador**, sin servidor, sin conexión a internet y con latencia de inferencia menor a 10ms.
 
-El sistema fue desarrollado con el propósito de reducir las barreras de comunicación de la comunidad sorda colombiana, utilizando tecnología de edge computing accesible desde cualquier dispositivo con cámara y navegador, sin necesidad de infraestructura costosa.
+El sistema fue desarrollado para reducir las barreras de comunicación de la comunidad sorda colombiana, usando tecnología edge accesible desde cualquier dispositivo con cámara y navegador, sin infraestructura costosa.
 
-> **Estado actual:** El modelo base fue entrenado con datos ASL como prueba de concepto. La migración completa a LSC está en progreso con dataset propio recolectado con la comunidad sorda colombiana en colaboración con intérpretes certificados de LSC.
+> **Estado actual:** El modelo base fue entrenado con datos ASL como prueba de concepto. La migración completa a LSC está en progreso con dataset propio recolectado con la comunidad sorda colombiana en colaboración con intérpretes certificados.
 
 ## Pipeline completo
 
@@ -84,7 +81,7 @@ Red neuronal → Softmax estable → Juez U/R → Filtro zona gris → Buffer vo
 
 **Filtro zona gris**: entre 55% y 75% de confianza aplica penalización suave por distancia al centroide de clase. Por encima del 75% no penaliza para no rechazar señas válidas con alta confianza
 
-**dist_ref por clase**: P75 de distancias intra-clase calculado sobre el training set. M y N tienen dist_ref 5-6× más altas que el resto por la alta varianza que genera la oclusión de dedos superpuestos
+**dist_ref por clase**: P75 de distancias intra-clase calculado sobre el training set. M y N tienen dist_ref 5-6x más altas que el resto por la alta varianza que genera la oclusión de dedos superpuestos
 
 **Buffer de votación ponderado**: acumula pesos por frame, requiere peso mínimo equivalente a 5 votos sobre umbral para confirmar. Elimina detecciones espurias sin necesitar bajar la mano entre letras
 
@@ -99,7 +96,7 @@ Red neuronal → Softmax estable → Juez U/R → Filtro zona gris → Buffer vo
 
 ### Hot path con cero allocaciones por frame
 
-El loop de inferencia mantiene buffers preasignados que se reutilizan entre frames, eliminando GC presión durante sesiones largas:
+El loop de inferencia mantiene buffers preasignados que se reutilizan entre frames, eliminando presión de GC durante sesiones largas:
 
 | Estructura | Tipo | Reemplazo de |
 |------------|------|--------------|
@@ -117,7 +114,7 @@ Pre-cálculo de `invDp = 1/dp` reemplaza 42 divisiones por 42 multiplicaciones e
 
 ### Preprocesado en `ml/train.py`
 
-1. Recalibración anatómica forzada en cada fila, idempotente, si ya está normalizado no cambia nada
+1. Recalibración anatómica forzada en cada fila, idempotente
 2. Ángulo global calculado on-the-fly
 3. Split estratificado 85/15 con stratify por clase
 4. **Limpieza de outliers IQR×3.0** solo sobre train set, elimina frames donde MediaPipe trackea mal
@@ -130,14 +127,14 @@ Pre-cálculo de `invDp = 1/dp` reemplaza 42 divisiones por 42 multiplicaciones e
 | Optimizador | AdamW (lr=0.001, weight_decay=0.01) |
 | Scheduler | CosineAnnealingWarmRestarts (T₀=10) |
 | Loss | CrossEntropyLoss con pesos de clase |
-| Augmentation | Ruido gaussiano + rotación ±20° + escala 0.88–1.12 |
+| Augmentation | Ruido gaussiano + rotación ±20° + escala 0.88-1.12 |
 | Early stopping | patience=15 sobre accuracy de test |
 
 ### Diagnóstico automático
 
 `ml/train.py` verifica que la normalización fue correcta antes de entrenar:
-- `x̄_muñ ≈ 0` y `ȳ_muñ ≈ 0` → muñeca en el origen ✓
-- `‖p9‖ ≈ 1.000` → escala anatómica aplicada ✓
+- `x̄_muñ ≈ 0` y `ȳ_muñ ≈ 0` → muñeca en el origen
+- `‖p9‖ ≈ 1.000` → escala anatómica aplicada
 
 ### Datasets
 
@@ -185,64 +182,77 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 ```
 ├── src/
 │   ├── core/
-│   │   ├── app.ts          # Orquestador, pipeline Tasks-Vision, ROI, visibilidad, luminosidad
-│   │   └── main.ts         # Entry point + registro del Service Worker
+│   │   ├── app.ts              # Orquestador: pipeline Tasks-Vision, ROI, visibilidad, luminosidad
+│   │   └── main.ts             # Entry point + registro del Service Worker
 │   ├── engine/
-│   │   ├── inference.ts    # Motor de IA, preprocesado, softmax, filtros, buffer circular de votos
-│   │   └── types.ts        # Interfaces TypeScript del motor
+│   │   ├── inference.ts        # Motor IA: preprocesado, softmax, filtros, buffer circular de votos
+│   │   └── types.ts            # Interfaces TypeScript del motor
 │   ├── game/
-│   │   └── game.ts         # Motor de gamificación, palabras por niveles, banco local 300 palabras
+│   │   └── game.ts             # Motor de gamificación, 300 palabras, 5 niveles, eventos yoso:juego
 │   ├── lib/
-│   │   └── signs.ts        # Diagramas SVG orgánicos del alfabeto (perspectiva observador)
+│   │   └── signs.ts            # Diagramas SVG del alfabeto (perspectiva observador)
 │   ├── ui/
-│   │   ├── hud.ts          # HUD de predicción y estado de mano
-│   │   ├── debug.ts        # Panel de debug, métricas, buffer, top-3
-│   │   ├── splash.ts       # Pantalla de carga
-│   │   ├── toast.ts        # Notificaciones no intrusivas
-│   │   ├── learn.ts        # Modo aprendizaje, grid del alfabeto
-│   │   ├── onboarding.ts   # Tutorial de primera visita
-│   │   └── index.ts        # Re-exporta RenderizadorUI
-│   └── styles.css          # UI fluid con CSS custom properties + container queries
+│   │   ├── index.ts            # RenderizadorUI: orquesta todos los paneles
+│   │   ├── hud.ts              # HUD de predicción, métricas de mano y estado
+│   │   ├── output.ts           # Panel traductor: letra, buffer, stream de confianza
+│   │   ├── panel-left.ts       # Indicador live de cámara activa
+│   │   ├── game-panel.ts       # Panel entrenamiento: constelación de niveles, historial
+│   │   ├── learn.ts            # Modo aprendizaje: grid del alfabeto con estado visto/activo
+│   │   ├── splash.ts           # Pantalla de carga y estado vacío
+│   │   ├── toast.ts            # Notificaciones no intrusivas
+│   │   ├── onboarding.ts       # Tutorial de primera visita
+│   │   ├── debug.ts            # Panel de debug, métricas, top-3
+│   │   └── site-footer.ts      # Footer con créditos
+│   └── styles/
+│       ├── tokens.css          # Variables OKLCH, tipografía, espaciado
+│       ├── base.css            # Reset y estilos base
+│       ├── layout.css          # Shell de la app, breakpoints
+│       ├── index.css           # Entry: importa todos los módulos CSS
+│       ├── motion.css          # Animaciones y transiciones
+│       ├── reset.css           # Reset de navegador
+│       ├── components/         # buffer, button, hud, output, signature, tabs, video
+│       ├── modes/              # aprendizaje, entrenamiento, traductor
+│       └── overlays/           # empty-state, onboarding, splash, toast
 ├── public/
-│   ├── YOSO.onnx           # Modelo exportado (2.4 MB)
-│   ├── Centroides.json     # Centroides + dist_ref P75 por clase
-│   ├── manifest.json       # PWA manifest
-│   ├── sw.js               # Service Worker, cache-first CDN + Google Storage, network-first navegación
-│   ├── robots.txt          # Directivas para crawlers
-│   └── favicon.svg         # Ícono de la app
+│   ├── YOSO.onnx               # Modelo exportado (2.4 MB)
+│   ├── Centroides.json         # Centroides + dist_ref P75 por clase
+│   ├── manifest.json           # PWA manifest
+│   ├── sw.js                   # Service Worker v12, cache-first assets, network-first navegación
+│   ├── robots.txt
+│   └── favicon.svg
 ├── ml/
-│   ├── __init__.py
-│   ├── extract.py          # Extractor de landmarks desde imágenes del dataset
-│   ├── train.py            # Entrenamiento, limpieza IQR, exportación ONNX
-│   ├── features.py         # Feature engineering compartido (umbral 1e-4 alineado con TS)
-│   ├── config.py           # Configuración del pipeline ML (datasets vía env YOSO_DATA_ROOTS)
-│   └── model/              # Salida del entrenamiento (ONNX + JSON), no versionado
+│   ├── extract.py              # Extractor de landmarks desde imágenes del dataset
+│   ├── train.py                # Entrenamiento, limpieza IQR, exportación ONNX
+│   ├── features.py             # Feature engineering compartido
+│   ├── config.py               # Configuración del pipeline ML
+│   └── model/                  # Salida del entrenamiento, no versionado
 ├── docker/
-│   ├── Dockerfile          # Multi-stage: node:22-alpine builder → nginx:1.27-alpine runtime non-root
-│   ├── compose.yaml        # Docker Compose, read-only fs, cap_drop ALL, tmpfs, memory limits
-│   └── nginx.conf          # Listen 8080, gzip ampliado, sendfile, CSP completa, dotfile deny
-├── docs/                   # Documentación generada, no versionado (gitignored)
-├── index.html              # HTML principal
-├── vite.config.ts          # COOP/COEP + manualChunks (ort/mediapipe) + terser + lightningcss
-├── vercel.json             # Headers de seguridad completos (HSTS, CORP, Permissions-Policy, CSP)
-├── tsconfig.json           # TypeScript strict mode
-├── package.json            # pnpm@11, override protobufjs ≥7.5.8 (CVE)
+│   ├── Dockerfile              # Multi-stage: node:22-alpine builder → nginx:1.27-alpine runtime
+│   ├── compose.yaml            # Docker Compose con hardening completo
+│   └── nginx.conf              # Listen 8080, COOP/COEP, gzip WASM, CSP, cache diferenciada
+├── index.html
+├── vite.config.ts              # COOP/COEP + manualChunks (ort/mediapipe) + terser + lightningcss
+├── tsconfig.json               # TypeScript strict mode
+├── package.json                # pnpm@11, override protobufjs ≥7.5.8 (CVE)
 ├── pnpm-lock.yaml
-├── pnpm-workspace.yaml     # Workspace pnpm (sin packages anidados, root simple)
+├── pnpm-workspace.yaml
+├── CLAUDE.md                   # Instrucciones para Claude Code
+├── PRODUCT.md                  # Contexto de producto para herramientas de diseño
+├── LICENSE                     # MIT
+├── THIRD_PARTY_LICENSES.md
 ├── .dockerignore
-└── .gitignore              # Ignora docs/superpowers/, ml/model/, dist/, node_modules/
+└── .gitignore
 ```
 
 ## Instalación y uso
 
 ### Requisitos
 
-- Node.js 18+ y pnpm
+Node.js 18+ y pnpm
 
 ```bash
-git clone https://github.com/Praskc/Motor-de-inferencia-web-ASL-usando-mediapipe-landmarks-y-edge-computing.git
-cd Motor-de-inferencia-web-ASL-usando-mediapipe-landmarks-y-edge-computing
-git checkout refactor
+git clone https://github.com/Praskc/lsc-fingerspelling-edge.git
+cd lsc-fingerspelling-edge
 pnpm install
 pnpm dev
 ```
@@ -254,113 +264,99 @@ Abre `http://localhost:5173` y permite acceso a la cámara.
 ```bash
 pip install torch torchvision pandas numpy scikit-learn onnx
 
-# Extraer features desde imágenes
 python ml/extract.py
-
-# Entrenar, exporta YOSO.onnx y Centroides.json a ml/model/
 python ml/train.py
 
-# Copiar al directorio public para que Vite los sirva
 cp ml/model/YOSO.onnx public/
 cp ml/model/Centroides.json public/
 ```
 
-> **Consistencia crítica:** `ml/extract.py`, `ml/train.py` e `src/engine/inference.ts` implementan el mismo pipeline de normalización anatómica. Cualquier cambio debe aplicarse en los tres. El umbral de descarte de mano colapsada (`dp <= 1e-4`) está alineado entre `ml/features.py` y `src/engine/inference.ts`.
+> **Consistencia crítica:** `ml/extract.py`, `ml/train.py` y `src/engine/inference.ts` implementan el mismo pipeline de normalización anatómica. Cualquier cambio debe aplicarse en los tres. El umbral de descarte de mano colapsada (`dp <= 1e-4`) está alineado entre `ml/features.py` y `src/engine/inference.ts`.
 
-> **Datasets configurables:** `ml/config.py` lee la variable de entorno `YOSO_DATA_ROOTS` (rutas separadas por `;` en Windows o `:` en Unix) para apuntar a tus propios datasets, sin tocar código.
+> **Datasets configurables:** `ml/config.py` lee la variable de entorno `YOSO_DATA_ROOTS` (rutas separadas por `;` en Windows o `:` en Unix).
 
 ## Despliegue
 
-### Vercel
-
-Listo para desplegar sin configuración adicional. `vercel.json` configura el set completo de headers de seguridad: COOP/COEP (para SharedArrayBuffer), HSTS (2 años + includeSubDomains), CORP (`same-origin`), Permissions-Policy (cámara permitida, resto deshabilitado), CSP estricta (`'wasm-unsafe-eval'` sin `'unsafe-eval'`), X-Frame-Options DENY.
-
-```bash
-pnpm run build
-# Conectar el repositorio en vercel.com, detección automática de Vite
-```
-
 ### Docker
 
-Build multi-stage: construye con Node 22 Alpine (con BuildKit cache mount para pnpm store) y sirve con nginx 1.27 Alpine. El contenedor está hardened con perfil de producción:
+Build multi-stage: construye con Node 22 Alpine y sirve con nginx 1.27 Alpine. Hardened para producción:
 
 | Hardening | Implementación |
 |-----------|----------------|
-| Usuario no-root | `USER nginx` en el stage final, listen en 8080 |
+| Usuario no-root | `USER nginx`, listen en 8080 |
 | Read-only filesystem | `read_only: true` en compose |
 | Capacidades mínimas | `cap_drop: [ALL]` + cap_add solo `CHOWN`, `SETUID`, `SETGID`, `NET_BIND_SERVICE` |
 | Sin escalada de privilegios | `security_opt: [no-new-privileges:true]` |
 | Tmpfs aislados | `/var/cache/nginx`, `/var/run`, `/tmp` con tamaños acotados |
 | Límites de recursos | `mem_limit: 256m`, `pids_limit: 100` |
-| Healthcheck | `wget -q --spider http://127.0.0.1:8080/` cada 30s |
 
 ```bash
 docker compose -f docker/compose.yaml up --build       # http://localhost:8080
-docker compose -f docker/compose.yaml up --build -d    # En segundo plano
+docker compose -f docker/compose.yaml up --build -d    # en segundo plano
 ```
 
-El `nginx.conf` incluye además:
-- `server_tokens off` (no leak de versión)
-- `limit_except GET HEAD OPTIONS` (read-only)
-- `sendfile on; tcp_nopush on; tcp_nodelay on; aio threads` (kernel zero-copy)
-- `keepalive_timeout 30; keepalive_requests 100` (mobile reconnect)
-- `gzip` ampliado a `application/wasm` y `application/octet-stream` con `gzip_static on`
-- `location ~ /\. { deny all; }` (dotfiles bloqueados)
+El `nginx.conf` incluye:
+- `server_tokens off`
+- `limit_except GET HEAD OPTIONS`
+- `sendfile on; tcp_nopush on; tcp_nodelay on; aio threads`
+- `gzip` ampliado a `application/wasm` y `application/octet-stream`
+- `location ~ /\. { deny all; }`
 - Caché diferenciada (assets con hash `immutable`, modelo 7 días, SW sin caché)
 - Headers de seguridad COOP/COEP/HSTS/CORP/Permissions-Policy/CSP en cada `location`
 
 ## Notas técnicas
 
-**Lateralidad MediaPipe Tasks-Vision**: A diferencia de la API legacy, Tasks-Vision 0.10.35 etiqueta la mano derecha física como `'Right'`. El flip de eje X se aplica cuando `handedness.label === 'Left'` (mano izquierda física vista en espejo)
+**Lateralidad MediaPipe Tasks-Vision**: Tasks-Vision 0.10.35 etiqueta la mano derecha física como `'Right'`. El flip de eje X se aplica cuando `handedness.label === 'Left'`.
 
-**M y N**: son las clases con mayor varianza intra-clase por oclusión de dedos superpuestos. Sus dist_ref son 5-6× más altas que el resto
+**M y N**: son las clases con mayor varianza intra-clase por oclusión de dedos superpuestos. Sus dist_ref son 5-6x más altas que el resto.
 
-**SharedArrayBuffer**: ONNX Runtime WASM con `intraOpNumThreads: 2` requiere los headers `Cross-Origin-Opener-Policy: same-origin` y `Cross-Origin-Embedder-Policy: require-corp`. Configurados en `vite.config.ts` (dev/preview), `vercel.json` (producción Vercel) y `docker/nginx.conf` (Docker)
+**SharedArrayBuffer**: ONNX Runtime WASM con `intraOpNumThreads: 2` requiere `Cross-Origin-Opener-Policy: same-origin` y `Cross-Origin-Embedder-Policy: require-corp`. Configurados en `vite.config.ts` (dev/preview) y `docker/nginx.conf` (producción).
 
-**Service Worker y modelo ONNX**: el modelo (2.4 MB) se precachea en la instalación del SW. Tras la primera carga la app funciona completamente offline. La versión de caché es `yoso-v8`. Bumpeada al migrar a self-hosting de assets (URLs cambiaron, requiere invalidar cache viejo). PRECACHE list se mantiene mínima para evitar la regresión de FPS observada en v7 con precache extendido.
+**Service Worker**: el modelo (2.4 MB) se precachea en la instalación del SW. Tras la primera carga la app funciona completamente offline. La versión de caché es `yoso-v12`.
 
-**Bundle partitionado**: Vite produce chunks separados: `ort-*.js` (~402 KB), `mediapipe-*.js` (~132 KB), `index-*.js` (~37 KB). Updates de código de app preservan los caches de ORT y MediaPipe en el SW, reduciendo bytes re-descargados tras un deploy. Minificación con terser en 2 pasadas y CSS con lightningcss
+**Bundle particionado**: Vite produce chunks separados: `ort-*.js` (~402 KB), `mediapipe-*.js` (~132 KB), `index-*.js` (~37 KB). Updates de código de app preservan los caches de ORT y MediaPipe en el SW, reduciendo bytes re-descargados tras un deploy.
 
-**WebGPU vs WASM SIMD**: Para modelos pequeños como este FCNN (~455K params), el overhead fijo de WebGPU (dispatch + sync + transferencia) excede el ahorro de compute. Se prefiere WASM SIMD con 2 hilos: latencia ~0.7ms vs ~10ms con WebGPU. Documentado en el commit `78ec8fe`
+**WebGPU vs WASM SIMD**: Para este FCNN (~455K params), el overhead fijo de WebGPU (dispatch + sync + transferencia) excede el ahorro de compute. Se prefiere WASM SIMD con 2 hilos: latencia ~0.7ms vs ~10ms con WebGPU.
 
 ## Assets de terceros self-hosted
 
-A partir de v3.1, todos los binarios necesarios para inferencia se sirven desde el mismo origen que la app, eliminando dependencia runtime de CDN externos:
+Todos los binarios necesarios para inferencia se sirven desde el mismo origen, sin dependencia de CDN externos:
 
-| Asset | Origen original | Tamaño | Servido desde |
-|-------|------------------|--------|----------------|
-| `hand_landmarker.task` | MediaPipe (Google) | ~7.5 MB | `/mediapipe/` (commiteado a public/) |
-| `vision_wasm_internal.{js,wasm}` | @mediapipe/tasks-vision | ~5 MB | `/mediapipe/` (copy en build) |
-| `ort-wasm-simd-threaded.{mjs,wasm}` | onnxruntime-web | ~12 MB | `/ort/` (copy en build) |
+| Asset | Origen | Tamaño | Servido desde |
+|-------|--------|--------|---------------|
+| `hand_landmarker.task` | MediaPipe (Google) | ~7.5 MB | `/mediapipe/` |
+| `vision_wasm_internal.{js,wasm}` | @mediapipe/tasks-vision | ~5 MB | `/mediapipe/` |
+| `ort-wasm-simd-threaded.{mjs,wasm}` | onnxruntime-web | ~12 MB | `/ort/` |
+| Bricolage Grotesque Variable | Fontsource | ~300 KB | self (pnpm) |
+| Geist Variable, Geist Mono Variable | Fontsource | ~200 KB | self (pnpm) |
 
-Atribuciones legales completas en [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). Licencias compatibles: Apache 2.0 (MediaPipe) y MIT (ORT).
+Atribuciones legales completas en [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 Implicancias:
-
 - App arranca sin internet desde el primer load (si está instalada como PWA)
 - CSP `script-src` y `connect-src` sin orígenes externos (solo `'self'` + `api.datamuse.com`)
-- Bundle inicial: 27 MB (vs 5 MB antes), cacheado por SW en primera visita
-- Cero dependencia de disponibilidad de `cdn.jsdelivr.net` o `storage.googleapis.com`
-
-## Ramas
-
-| Rama | Descripción |
-|------|-------------|
-| `main` | Legacy, JavaScript vanilla, arquitectura original v1 |
-| `refactor` | Actual, TypeScript strict, arquitectura modular, MediaPipe Tasks-Vision, PWA, CSP completa |
+- Bundle inicial: ~27 MB, cacheado por SW en primera visita
 
 ## Changelog
 
-### v3.0: pulido total del backend (actual)
-Motor con cero allocaciones por frame mediante buffer circular de votos (`Int8Array(9)` + `Float32Array(9)` + head pointer), acumulador de pesos indexado por letra (`Float32Array(28)` reemplazando `Map<string,number>`), reuso de `ort.Tensor` y `inputFeed` entre frames, pre-cálculo de `invDp` (1 división vs 42), mapa de centroides indexado por posición en alfabeto. Build optimizado: terser passes 2, manualChunks separando ORT y MediaPipe, CSS con lightningcss, target ES2022. Docker hardened: usuario nginx no-root con HEALTHCHECK, listen 8080, read-only filesystem, `cap_drop ALL`, `no-new-privileges`, tmpfs para escrituras, límites de memoria y PIDs. Nginx con sendfile + tcp_nopush + keepalive optimizado + gzip ampliado a WASM/ONNX + `server_tokens off` + dotfile deny. Seguridad: CSP sin `'unsafe-eval'` (usa `'wasm-unsafe-eval'`), HSTS 2 años, Cross-Origin-Resource-Policy, Permissions-Policy estricta, pin de protobufjs ≥7.5.8 (CVE). ML alineado: umbral `1e-4` en `ml/features.py` consistente con TypeScript, `YOSO_DATA_ROOTS` configurable por env, wrap angular en augmentation.
+### v3.1: UI modular y performance frontend (actual)
+
+CSS refactorizado en módulos (`src/styles/components/`, `modes/`, `overlays/`) con tokens OKLCH. Fuentes self-hosted via Fontsource (Bricolage Grotesque Variable + Geist Variable), eliminando la dependencia de Google Fonts. DOM write guards en HUD y PanelLeft: early-return cuando el valor no cambia (~30fps sin escrituras redundantes). Buffer cells cacheadas y coordenadas X precalculadas en OutputPanel, running sum para el promedio del stream. Eventos `yoso:juego` personalizados reemplazando MutationObserver en GamePanel. Service worker v12 simplificado a cache-first puro sin handlers CDN obsoletos. Licencia MIT.
+
+### v3.0: pulido total del backend
+
+Motor con cero allocaciones por frame mediante buffer circular de votos (`Int8Array(9)` + `Float32Array(9)` + head pointer), acumulador de pesos indexado por letra (`Float32Array(28)` reemplazando `Map<string,number>`), reuso de `ort.Tensor` y `inputFeed` entre frames, pre-cálculo de `invDp`. Build optimizado: terser passes 2, manualChunks separando ORT y MediaPipe, CSS con lightningcss. Docker hardened: usuario nginx no-root, read-only filesystem, `cap_drop ALL`, `no-new-privileges`, tmpfs, límites de memoria y PIDs. Seguridad: CSP con `'wasm-unsafe-eval'`, HSTS, CORP, Permissions-Policy, pin de protobufjs ≥7.5.8 (CVE).
 
 ### v3: refactor
-Modularización de `src/` en `core/`, `engine/`, `game/`, `lib/` y `ui/`. Migración a `@mediapipe/tasks-vision@0.10.35` con fix de lateralidad. CSP en Vercel y Docker. Service worker `yoso-v6` con cache de Google Storage. Panel de debug extendido con MP frame y FPS. `compose.yaml` movido a `docker/`.
 
-### v2: refactor
-Migración a TypeScript strict. PWA instalable y funcional offline. Gamificación con banco local de 300 palabras. Modo aprendizaje con grid interactivo. Buffer de votación ponderado. ROI adaptativo. Detección de luminosidad. Panel de debug. Deploy en Vercel y Docker.
+Modularización de `src/` en `core/`, `engine/`, `game/`, `lib/` y `ui/`. Migración a `@mediapipe/tasks-vision@0.10.35` con fix de lateralidad. Panel de debug extendido con MP frame y FPS.
+
+### v2
+
+Migración a TypeScript strict. PWA instalable y funcional offline. Gamificación con banco local de 300 palabras. Modo aprendizaje con grid interactivo. Buffer de votación ponderado. ROI adaptativo. Detección de luminosidad.
 
 ### v1: main (legacy)
+
 JavaScript vanilla. Pipeline de 48 features con normalización anatómica. Filtro zona gris con dist_ref P75. Dataset ~360k muestras, 98.63% accuracy.
 
 ## Roadmap
@@ -373,16 +369,16 @@ JavaScript vanilla. Pipeline de 48 features con normalización anatómica. Filtr
 ### Siguiente fase
 - [ ] Cuantización INT8 para deployment en ESP32-S3, TinyML edge
 - [ ] Panel de referencia visual con todas las señas LSC
-- [ ] Coordenada Z de MediaPipe en extracción de features, reduce falsos positivos por oclusión
+- [ ] Coordenada Z de MediaPipe en extracción de features
 - [ ] Features de curvatura e ángulos inter-dedo para M/N/E/S
 
 ## Contexto
 
-Este proyecto nace en **Sucre, Colombia**. El reconocimiento de lengua de señas es un derecho de comunicación, no un producto, por ende YOSO es y será siempre open source, desarrollado en colaboración con la comunidad sorda colombiana de la universidad de Sucre.
+Este proyecto nace en **Sincelejo, Sucre, Colombia**. El reconocimiento de lengua de señas es un derecho de comunicación, no un producto, por ende YOSO es y será siempre open source, desarrollado en colaboración con la comunidad sorda colombiana de la Universidad de Sucre.
 
 ## Autor
 
-**Esteban Cotera**: Estudiante de Ingeniería electrónica, Sucre, Colombia
-
+**Esteban Cotera** — Estudiante de Ingeniería Electrónica, Sincelejo, Colombia
+[github.com/Praskc](https://github.com/Praskc)
 
 </div>
