@@ -277,6 +277,10 @@ cp ml/model/Centroides.json public/
 
 ## Despliegue
 
+### Vercel
+
+`vercel.json` ya trae todo: comandos de build con pnpm, output `dist/` y los headers COOP/COEP que ONNX Runtime necesita para `SharedArrayBuffer`, más CSP, Permissions-Policy y el resto de headers de seguridad. Solo hay que importar el repo en [vercel.com](https://vercel.com) y apuntar la rama de producción a `rolling`.
+
 ### Docker
 
 Build multi-stage: construye con Node 22 Alpine y sirve con nginx 1.27 Alpine. Hardened para producción:
