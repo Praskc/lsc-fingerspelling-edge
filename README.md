@@ -18,8 +18,8 @@
 >
 > | Rama | Propósito |
 > |------|-----------|
-> | [`rolling`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling) | **Activa**: TypeScript, arquitectura modular, self-hosted |
-> | [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main) | Legacy JavaScript vanilla, archivada |
+> | [`rolling`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling) | **Activa**: desarrollo continuo, self-hosted, todo lo nuevo entra aquí |
+> | [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main) | Estable: snapshot validado de `rolling`, se actualiza por merge manual |
 
 ## ¿Qué es YOSO?
 
@@ -355,9 +355,9 @@ Modularización de `src/` en `core/`, `engine/`, `game/`, `lib/` y `ui/`. Migrac
 
 Migración a TypeScript strict. PWA instalable y funcional offline. Gamificación con banco local de 300 palabras. Modo aprendizaje con grid interactivo. Buffer de votación ponderado. ROI adaptativo. Detección de luminosidad.
 
-### v1: main (legacy)
+### v1 (histórico)
 
-JavaScript vanilla. Pipeline de 48 features con normalización anatómica. Filtro zona gris con dist_ref P75. Dataset ~360k muestras, 98.63% accuracy.
+JavaScript vanilla, hoy solo en el historial de git. Pipeline de 48 features con normalización anatómica. Filtro zona gris con dist_ref P75. Dataset ~360k muestras, 98.63% accuracy.
 
 ## Roadmap
 
