@@ -5,7 +5,7 @@
 **Motor de reconocimiento de Lengua de Señas Colombiana (LSC) en tiempo real**
 *Inferencia edge · Sin servidor · < 10ms de latencia*
 
-[![Branch: rolling](https://img.shields.io/badge/rama-rolling-0EA5E9?style=flat-square)](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling)
+[![Branch: main](https://img.shields.io/badge/rama-main-22C55E?style=flat-square)](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-Web-FF6F00?style=flat-square&logo=onnx&logoColor=white)](https://onnxruntime.ai/)
@@ -14,12 +14,12 @@
 
 </div>
 
-> **Estás viendo la rama `rolling`, desarrollo activo.**
+> **Estás viendo la rama `main`, snapshot estable.**
 >
 > | Rama | Propósito |
 > |------|-----------|
-> | [`rolling`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling) | **Activa**: desarrollo continuo, self-hosted, todo lo nuevo entra aquí |
-> | [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main) | Estable: snapshot validado de `rolling`, se actualiza por merge manual |
+> | [`main`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/main) | **Estable**: snapshot validado de `rolling`, se actualiza por merge manual |
+> | [`rolling`](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling) | Activa: desarrollo continuo, self-hosted, todo lo nuevo entra aquí |
 
 ## ¿Qué es YOSO?
 
