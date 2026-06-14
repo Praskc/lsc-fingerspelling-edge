@@ -5,7 +5,7 @@
 **Motor de reconocimiento de Lengua de Señas Colombiana (LSC) en tiempo real**
 *Inferencia edge · Sin servidor · < 10ms de latencia*
 
-[![Branch: rolling](https://img.shields.io/badge/branch-rolling-0EA5E9?style=flat-square)](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling)
+[![Branch: rolling](https://img.shields.io/badge/rama-rolling-0EA5E9?style=flat-square)](https://github.com/Praskc/lsc-fingerspelling-edge/tree/rolling)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-Web-FF6F00?style=flat-square&logo=onnx&logoColor=white)](https://onnxruntime.ai/)
@@ -237,7 +237,6 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 ├── pnpm-lock.yaml
 ├── pnpm-workspace.yaml
 ├── CLAUDE.md                   # Instrucciones para Claude Code
-├── PRODUCT.md                  # Contexto de producto para herramientas de diseño
 ├── LICENSE                     # MIT
 ├── THIRD_PARTY_LICENSES.md
 ├── .dockerignore
@@ -371,6 +370,7 @@ JavaScript vanilla, hoy solo en el historial de git. Pipeline de 48 features con
 - [ ] GRU unidireccional para 5 letras con movimiento (J, Ñ, S, G, Z)
 
 ### Siguiente fase
+- [ ] Migración de MediaPipe Tasks-Vision a Web Worker con OffscreenCanvas: libera ~7ms/frame del main thread
 - [ ] Cuantización INT8 para deployment en ESP32-S3, TinyML edge
 - [ ] Panel de referencia visual con todas las señas LSC
 - [ ] Coordenada Z de MediaPipe en extracción de features
