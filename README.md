@@ -250,8 +250,8 @@ Las 5 letras con movimiento (G, J, S, Z, Ñ) serán manejadas por una **rama GRU
 Node.js 18+ y pnpm
 
 ```bash
-git clone https://github.com/Praskc/lsc-fingerspelling-edge.git
-cd lsc-fingerspelling-edge
+git clone https://github.com/Praskc/yoso
+cd yoso
 pnpm install
 pnpm dev
 ```
